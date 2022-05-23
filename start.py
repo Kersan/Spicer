@@ -1,12 +1,24 @@
 from bot import Bot
 from configparser import ConfigParser
 
-config = ConfigParser()
+# Wersja: 0.1.2 indev
 
-cfg = config.read("config.ini", encoding="utf-8")
-token = config.get(section="BOT", option="TOKEN")
+# SCIEŻKA DO CONFIGU
+CONFIG_PATH = "config.ini"
+
 
 if __name__ == "__main__":
 
-    bot = Bot(token, cfg)
+    config = ConfigParser()
+    cfg = config.read(CONFIG_PATH, encoding="utf-8")
+
+    bot = Bot(
+        config_path=CONFIG_PATH
+    )
+
     bot.run()
+
+#########################################################
+# TODO:
+#  - Dodać klase, która będzie dziedziczyła z Exceptions
+#    i dodać własne errory w miejsca ewentualnych błędów

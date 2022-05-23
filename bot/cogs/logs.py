@@ -5,6 +5,7 @@ from discord.ext import commands
 class MessageDelete(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self.config = bot.config
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):

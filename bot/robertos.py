@@ -3,33 +3,51 @@ import asyncio
 import discord
 from discord.ext import commands
 from .mongo.db import Mongo
+from utils.config import Config
 
 from bot.cogs import COGS
 
 
 class Bot(commands.Bot):
-    def __init__(self, token: str, config):
+    def __init__(self, config_path):
 
-        self.config = config
-        self.TOKEN = token
+        self.config = Config(config_path)
+        self.Mongo = Mongo("mongodb://localhost:27017")
+
+        ####################
+        # DISCORD RZECZY 🥶
 
         intents = self.get_intents(discord.Intents.default())
 
+        # Initializacja klasy commands.Bot
         super().__init__(
             command_prefix=self.prefix,
             case_insensitive=True,
             intents=intents
         )
 
-        self.Mongo = Mongo("mongodb://localhost:27017")
+    ##############
+    # Robertos 😼
 
     def run(self):
-        super().run(self.TOKEN, reconnect=True)
+        """ Metoda startowa bota 🚀 """
+        super().run(self.config.token, reconnect=True)
 
     async def prefix(self, bot, msg):
+        """ Zwraca możliwe prefixy """
         return commands.when_mentioned_or("!")(bot, msg)
 
-    """ EVENTY BOTA """
+    @staticmethod
+    def get_intents(intents):
+        """ Zwraca potrzebne do działania bota ustawienia intentsów """
+        intents.message_content = True
+        intents.members = True
+        intents.guilds = True
+
+        return intents
+
+    ################
+    # Eventy bota ⚙
 
     async def on_ready(self):
         pass
@@ -60,11 +78,3 @@ class Bot(commands.Bot):
 
     async def on_error(self, err, *args, **kwargs):
         raise
-
-    @staticmethod
-    def get_intents(intents):
-        intents.message_content = True
-        intents.members = True
-        intents.guilds = True
-
-        return intents
