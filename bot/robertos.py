@@ -5,7 +5,7 @@ from discord.ext import commands
 from .mongo.db import Mongo
 from utils.config import Config
 
-from bot.cogs import COGS
+from bot.cogs import *
 
 
 class Bot(commands.Bot):
@@ -53,8 +53,8 @@ class Bot(commands.Bot):
         pass
 
     async def setup_hook(self) -> None:
-        for cog in COGS:
-            await self.add_cog(cog(self))
+        for cog in LOG_COGS:
+            await self.add_cog(cog(self), guilds=self.config.modules_logs)
 
     async def close(self):
         await super().close()

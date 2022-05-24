@@ -1,4 +1,5 @@
 from .logs import MessageDelete, MessageEdit
 from .twitch import Twitch
 
-COGS = [MessageDelete, MessageEdit, Twitch]
+LOG_COGS = [MessageDelete, MessageEdit]
+TWICH_COGS = [Twitch]
