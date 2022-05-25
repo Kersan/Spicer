@@ -36,6 +36,7 @@ class Config:
         self.modules_logs = json.loads(config.get("MODULES", "LOGS", fallback=default.modules_logs))
         # MODULES | TWICH
         self.modules_twitch = json.loads(config.get("MODULES", "TWITCH", fallback=default.modules_twitch))
+        print(self.modules_twitch)
         # LOG_MESSAGE > dict
         self.log_message = self.make_dict(config, "LOG_MESSAGE", default.log_message, use_int=True)
         # TWITCH > dict

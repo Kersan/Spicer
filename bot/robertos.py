@@ -55,6 +55,8 @@ class Bot(commands.Bot):
     async def setup_hook(self) -> None:
         for cog in LOG_COGS:
             await self.add_cog(cog(self), guilds=self.config.modules_logs)
+        for cog in TWICH_COGS:
+            await self.add_cog(cog(self), guilds=self.config.modules_logs)
 
     async def close(self):
         await super().close()
