@@ -22,7 +22,13 @@ class MessageDelete(commands.Cog):
         print(f"LOG-ID: {log_id}")
 
         if message.guild.id in self.log_channels:
-            print("Wyśle tu wiadomość")
+            channel_id = self.config.log_message[message.guild.id]
+            channel = self.bot.get_channel(channel_id)
+
+            await channel.send(
+                f"Wiadomość użytkownika: {message.author} została usunięta! 🙀"
+                f"\n```{message.content}```"
+            )
 
 
 # Edytowanie wiadomości
@@ -47,5 +53,12 @@ class MessageEdit(commands.Cog):
         print(f"LOG-ID: {log_id}")
 
         if before.guild.id in self.log_channels:
-            print("Wyśle tu wiadomość")
+            channel_id = self.config.log_message[before.guild.id]
+            channel = self.bot.get_channel(channel_id)
+
+            await channel.send(
+                f"Wiadomość użytkownika: {before.author} została edytowana! 🧐"
+                f"\nPrzed:```{before.content}```"
+                f"\nPo:```{after.content}```"
+            )
 
