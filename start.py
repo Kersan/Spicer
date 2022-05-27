@@ -22,3 +22,12 @@ if __name__ == "__main__":
 # TODO:
 #  - Dodać klase, która będzie dziedziczyła z Exceptions
 #    i dodać własne errory w miejsca ewentualnych błędów
+#  - Logger
+#  - Rozbudować logi wiadomości:
+#    - Sprawdzenie, czy wiadomość ma pliki
+#    - Sprawdzenie, czy długość wiadomości < 2000 - tworzyć plik
+#    - Polepszyć te ochdne embedy 😉
+#  - Twitch API może?
+#  - Polimorfizm dla obu klas z cogs.logs - message
+#
+#  - Zmergować projekt z botem muzycznym czy coś 🥴... Może...?
