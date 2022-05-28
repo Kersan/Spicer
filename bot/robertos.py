@@ -1,4 +1,5 @@
 import asyncio
+from re import T
 
 import discord
 from discord.ext import commands
@@ -53,9 +54,14 @@ class Bot(commands.Bot):
         pass
 
     async def setup_hook(self) -> None:
+        cogs = TWICH_COGS + UTILS_COGS
+
+        # Wczytywanie cogów z domyślnymi ustawieniami
+        for cog in cogs:
+            await self.add_cog(cog(self))
+
+        # wczytywanie cogów z jakimiś ustawieniami
         for cog in LOG_COGS:
-            await self.add_cog(cog(self), guilds=self.config.modules_logs)
-        for cog in TWICH_COGS:
             await self.add_cog(cog(self), guilds=self.config.modules_logs)
 
     async def close(self):
