@@ -1,5 +1,4 @@
-from discord.ext import commands, tasks
-import discord
+from discord.ext import commands
 from typing import Optional
 
 # Usunięcie wiadomości
