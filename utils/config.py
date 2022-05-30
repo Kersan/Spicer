@@ -1,6 +1,7 @@
 import os
 import json
 from configparser import ConfigParser
+from utils.logger import Logging
 
 
 class Config:
@@ -53,6 +54,8 @@ class Config:
         # TWITCH > dict
         self.twitch = self.__make_dict(config, "TWITCH", default.twitch)
 
+        Logging.info(__name__, "Config wczytany!")
+
     @staticmethod
     def __make_dict(cfg: ConfigParser, section: str, fallback: str, use_int: bool = False):
         options = cfg.options(section)
@@ -94,6 +97,8 @@ class Config:
         # Zawracam jak pusta lista
         if len(empty) == 0:
             return
+
+        Logging.warning(__name__, "W configu znajdują się niewypełnione pola!")
 
         # TODO: Zrobić funckje, która będzie sprawdzała numer lini konkretnej opcji
         for i in empty:

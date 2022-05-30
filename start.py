@@ -1,5 +1,6 @@
 from bot import Bot
 from configparser import ConfigParser
+import logging
 
 # Wersja: 0.1.2 indev
 
@@ -8,6 +9,17 @@ CONFIG_PATH = "config.ini"
 
 
 if __name__ == "__main__":
+
+    loggers = [
+        logging.getLogger('discord'), 
+        logging.getLogger('asyncio'),
+        logging.getLogger('aiohttp'),
+        logging.getLogger('charset_normalizer')
+        ]
+
+    for logger in loggers:
+        logger.setLevel(logging.WARNING)
+
 
     config = ConfigParser()
     cfg = config.read(CONFIG_PATH, encoding="utf-8")

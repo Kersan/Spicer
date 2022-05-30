@@ -1,12 +1,14 @@
 import asyncio
+import logging
 from re import T
 
 import discord
 from discord.ext import commands
-from .mongo.db import Mongo
 from utils.config import Config
 
 from bot.cogs import *
+
+from .mongo.db import Mongo
 
 
 class Bot(commands.Bot):
@@ -26,6 +28,8 @@ class Bot(commands.Bot):
             case_insensitive=True,
             intents=intents
         )
+
+        print([logging.getLogger(name) for name in logging.root.manager.loggerDict])
 
     ##############
     # Robertos 😼
