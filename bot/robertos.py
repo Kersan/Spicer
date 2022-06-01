@@ -1,14 +1,14 @@
 import asyncio
 import logging
-from re import T
 
 import discord
 from discord.ext import commands
 from utils.config import Config
+from utils.log import Log
 
 from bot.cogs import *
 
-from .mongo.db import Mongo
+from bot.mongo.mongo import Mongo
 
 
 class Bot(commands.Bot):
@@ -28,8 +28,6 @@ class Bot(commands.Bot):
             case_insensitive=True,
             intents=intents
         )
-
-        print([logging.getLogger(name) for name in logging.root.manager.loggerDict])
 
     ##############
     # Robertos 😼
@@ -55,7 +53,11 @@ class Bot(commands.Bot):
     # Eventy bota ⚙
 
     async def on_ready(self):
-        pass
+        Log.info(__name__, " ")
+        Log.info(__name__, f"Zalogowano jako: {self.user}")
+        Log.info(__name__, f"""Moduły: {str([cog for cog in self.cogs.keys()]).replace("'", "")}""")
+        Log.info(__name__, f"Ping: {self.latency.__round__(3)} sekundy")
+        Log.info(__name__, " ")
 
     async def setup_hook(self) -> None:
         cogs = TWICH_COGS + UTILS_COGS
@@ -72,7 +74,7 @@ class Bot(commands.Bot):
         await super().close()
 
     async def on_connect(self):
-        print("connected!")
+        Log.info(__name__, "Połączono z Discordem!")
 
     async def process_commands(self, msg):
         ctx = await self.get_context(msg, cls=commands.Context)

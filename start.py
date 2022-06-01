@@ -2,13 +2,16 @@ from bot import Bot
 from configparser import ConfigParser
 import logging
 
-# Wersja: 0.1.2 indev
+from utils.log import Log
+
+# Wersja: 0.1.3 indev
 
 # SCIEŻKA DO CONFIGU
 CONFIG_PATH = "config.ini"
 
 
 if __name__ == "__main__":
+    Log.info(__name__, "Uruchamianie bota")
 
     loggers = [
         logging.getLogger('discord'), 

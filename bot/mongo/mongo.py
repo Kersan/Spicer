@@ -2,6 +2,7 @@ import pymongo
 import sys
 
 from bot.mongo.dblogs import MongoLogs
+from utils.log import Log
 
 
 class Mongo(MongoLogs):
@@ -38,6 +39,7 @@ class Mongo(MongoLogs):
                 return client["test"]
 
             else:
+                Log.info(__name__, "   Połączono z bazą danych!")
                 return client.get_database("test")
 
         else:
