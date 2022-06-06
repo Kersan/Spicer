@@ -67,6 +67,9 @@ class MessageEdit(commands.Cog):
         if not self.check(before):
             return
 
+        if before.content == after.content:
+            return
+
         self.bot.Mongo.message_edited(
             guild_id=before.guild.id,
             user_id=before.author.id,

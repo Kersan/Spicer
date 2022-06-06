@@ -13,18 +13,25 @@ class Utils(commands.Cog):
 
     @commands.command(name="nick")
     @commands.has_permissions(administrator=True)
-    async def change_nick(self, ctx, suffix: str = "Kot"):
-        
+    async def change_nick(self, ctx, suffix: str = None):
+
+        await ctx.message.add_reaction("⌛")
+
         for member in ctx.guild.members:
+            nickname = member.name if not suffix else f"{member.name} {suffix}"
+
+            if member.bot:
+                continue
+
             try:
-                if member.bot:
-                    continue
-
-                await member.edit(nick=f"{member.name} {suffix}")
-
-                print(member.name)
-            except Exception as e:
+                await member.edit(nick=str(nickname))
+            except Exception:
                 pass
+
+            finally:
+                await ctx.message.remove_reaction("⌛", self.bot.user)
+                await ctx.message.add_reaction("👍")
+
 
     @commands.command(name="debug", hidden=True)
     @commands.has_permissions(administrator=True)
