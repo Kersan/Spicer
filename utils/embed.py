@@ -2,6 +2,7 @@ from typing import Optional
 import discord
 from datetime import datetime as dt
 
+
 def create_embed(title: str, user: Optional[discord.User] = None,
                  description: Optional[str] = "",
                  color: Optional[int] = 0x2f3136,

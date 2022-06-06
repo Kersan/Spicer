@@ -9,20 +9,18 @@ from utils.log import Log
 # SCIEŻKA DO CONFIGU
 CONFIG_PATH = "config.ini"
 
-
 if __name__ == "__main__":
     Log.info(__name__, "Uruchamianie bota")
 
     loggers = [
-        logging.getLogger('discord'), 
+        logging.getLogger('discord'),
         logging.getLogger('asyncio'),
         logging.getLogger('aiohttp'),
         logging.getLogger('charset_normalizer')
-        ]
+    ]
 
     for logger in loggers:
         logger.setLevel(logging.WARNING)
-
 
     config = ConfigParser()
     cfg = config.read(CONFIG_PATH, encoding="utf-8")

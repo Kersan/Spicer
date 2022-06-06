@@ -3,7 +3,6 @@ import aiohttp
 
 async def get_html(url: str):
     """ Zwraca kontent strony/html """
-    result = ""
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             result = await response.text()

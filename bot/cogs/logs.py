@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from utils import embed
 
+
 # Usunięcie wiadomości
 class MessageDelete(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -12,7 +13,7 @@ class MessageDelete(commands.Cog):
     def check(self, message: discord.Message):
         if message.author.bot:
             return False
-        
+
         if message.guild.id not in self.config.modules_logs:
             return False
 
@@ -20,7 +21,7 @@ class MessageDelete(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        
+
         if not self.check(message):
             return
 
@@ -36,7 +37,7 @@ class MessageDelete(commands.Cog):
 
             delete_embed = embed.create_embed(
                 title="Wiadomość usunięta",
-                user=message.author, 
+                user=message.author,
                 description=f"```{message.content}```",
                 color=0xff0036,
                 add_date=True
@@ -44,6 +45,7 @@ class MessageDelete(commands.Cog):
             print(delete_embed)
 
             await channel.send(embed=delete_embed)
+
 
 # Edytowanie wiadomości
 class MessageEdit(commands.Cog):
@@ -55,7 +57,7 @@ class MessageEdit(commands.Cog):
     def check(self, message: discord.Message):
         if message.author.bot:
             return False
-        
+
         if message.guild.id not in self.config.modules_logs:
             return False
 
@@ -63,7 +65,7 @@ class MessageEdit(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
-        
+
         if not self.check(before):
             return
 
@@ -83,7 +85,7 @@ class MessageEdit(commands.Cog):
 
             edited_embed1 = embed.create_embed(
                 title="Wiadomość edytowana",
-                user=before.author, 
+                user=before.author,
                 description=f"Przed:\n```{before.content}```",
                 color=0x0053ff,
                 add_date=False
@@ -98,4 +100,3 @@ class MessageEdit(commands.Cog):
 
             await channel.send(embed=edited_embed1)
             await channel.send(embed=edited_embed2)
-

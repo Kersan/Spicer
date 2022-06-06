@@ -31,7 +31,6 @@ class Config:
         # Sprawdzenie, czy wszystkie opcje są uzupełnione 
         self.check_config(config, config_sections)
 
-
         default = DefaultConfig()
 
         # BOT | TOKEN
@@ -89,7 +88,7 @@ class Config:
 
         for section in sections:
             for option in config.options(section):
-                
+
                 # Jeżeli opcja nie ma wartości, dodaje do empty
                 if not config.get(section, option):
                     empty.append(option)
@@ -112,7 +111,6 @@ class Config:
                 raise Exception(f"[CONFIG] Nie znaleziono wartości dla opcji {i}!")
 
 
-
 class DefaultConfig:
     """ Domyślne ustawienia configu
     W tej klasie przechowuje domyślne wartości dla
@@ -120,7 +118,6 @@ class DefaultConfig:
     """
 
     def __init__(self):
-
         # BOT
         self.token = None
         self.owner_ids = None

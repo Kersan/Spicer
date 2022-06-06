@@ -1,6 +1,7 @@
 from discord.ext import commands
 from typing import Optional
 
+
 # Usunięcie wiadomości
 class Utils(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -9,7 +10,6 @@ class Utils(commands.Cog):
 
         self.on = ['włącz', 'on', 'odpal', 'wlacz', 'włacz', 'wlącz']
         self.off = ['wyłącz', 'off', 'wylacz', 'wyłacz', 'wylącz', 'spierdalaj']
-
 
     @commands.command(name="nick")
     @commands.has_permissions(administrator=True)
@@ -32,7 +32,6 @@ class Utils(commands.Cog):
                 await ctx.message.remove_reaction("⌛", self.bot.user)
                 await ctx.message.add_reaction("👍")
 
-
     @commands.command(name="debug", hidden=True)
     @commands.has_permissions(administrator=True)
     async def debug(self, ctx, arg: Optional[str] = None):
@@ -48,7 +47,7 @@ class Utils(commands.Cog):
                 await ctx.message.add_reaction('🔛')
             except Exception as e:
                 print(e)
-        
+
         if arg in self.off:
             try:
                 await self.bot.unload_extension('jishaku')
