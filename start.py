@@ -1,46 +1,40 @@
-from bot import Bot
-from configparser import ConfigParser
-import logging
+import asyncio
+import json
+import os
 
-from utils.log import Log
+from spicier import SpicerBot
 
-# Wersja: 0.1.3 indev
 
-# SCIEŻKA DO CONFIGU
-CONFIG_PATH = "config.ini"
+def get_token():
+    with open('config/default.json', "r", encoding="utf-8") as f:
+        config = json.load(f)
+        return config["token"]
+
+if not os.path.exists("config/default.json"):
+    configExample = ""
+    with open('config/default-example.json', "r", encoding="utf-8") as example:
+        configExample = example.read()
+    
+    with open('config/default.json', "w", encoding="utf-8") as config:
+        config.write(configExample)
+
+
+if not 'BOT_TOKEN' in os.environ:
+    configToken = get_token()
+
+    if not configToken or len(configToken) < 16:
+        raise RuntimeError(
+            "Token not set in environment variables and is not valid in config.json!\n"
+            "Please set the token in env or use a valid token in config.json"
+            )
+
+    # should add to env, but not working 😜
+    os.environ["BOT_TOKEN"] = configToken
+
+async def main():
+    bot = SpicerBot()
+    await bot.run(os.environ.get("BOT_TOKEN", get_token()))
 
 if __name__ == "__main__":
-    Log.info(__name__, "Uruchamianie bota")
-
-    loggers = [
-        logging.getLogger('discord'),
-        logging.getLogger('asyncio'),
-        logging.getLogger('aiohttp'),
-        logging.getLogger('charset_normalizer')
-    ]
-
-    for logger in loggers:
-        logger.setLevel(logging.WARNING)
-
-    config = ConfigParser()
-    cfg = config.read(CONFIG_PATH, encoding="utf-8")
-
-    bot = Bot(
-        config_path=CONFIG_PATH
-    )
-
-    bot.run()
-
-#########################################################
-# TODO:
-#  - Dodać klase, która będzie dziedziczyła z Exceptions
-#    i dodać własne errory w miejsca ewentualnych błędów
-#  - Logger
-#  - Rozbudować logi wiadomości:
-#    - Sprawdzenie, czy wiadomość ma pliki
-#    - Sprawdzenie, czy długość wiadomości < 2000 - tworzyć plik
-#    - Polepszyć te ochdne embedy 😉
-#  - Twitch API może?
-#  - Polimorfizm dla obu klas z cogs.logs - message
-#
-#  - Zmergować projekt z botem muzycznym czy coś 🥴... Może...?
+    # 🚀 Launch the bot
+    asyncio.run(main())
