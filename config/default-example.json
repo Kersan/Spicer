@@ -1,3 +1,23 @@
 {
-    "token": "super secret token"
+    "token": "super secret token",
+    "prefix": "?",
+
+    "postgres": {
+        "host": "localhost",
+        "port": "5432",
+        "user": "root",
+        "password": "password",
+        "database": "database"
+    },
+
+    "lavalink": {
+        "host": "localhost",
+        "port": 2333,
+        "password": "youshallnotpass",
+        "identifier": "Spicer",
+        "region": "eu_east"
+    },
+
+    "delete_after": true,
+    "delete_time": 10
 }
