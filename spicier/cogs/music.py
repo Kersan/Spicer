@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Union
+from typing import Optional, Union
 
 import wavelink
 from discord import VoiceChannel
@@ -144,10 +144,15 @@ class MusicCog(commands.Cog):
             tracks.extend([t for t in track.tracks])
 
         elif isinstance(track, str):
-            result = await wavelink.YouTubeTrack.search(query=track, return_first=True)
+            try:
+                result = await wavelink.YouTubeTrack.search(
+                    query=track, return_first=True
+                )
 
-            if result:
-                tracks.append(result)
+                if result:
+                    tracks.append(result)
+            except Exception:
+                raise commands.BadArgument(f"Could not find any results for {track}.")
 
         if not tracks:
             return await ctx.send("No match found!")
@@ -174,13 +179,24 @@ class MusicCog(commands.Cog):
 
     @commands.command(name="queue", aliases=["q"])
     @commands.check(bot_connected)
-    async def queue_command(self, ctx: commands.Context):
+    async def queue_command(self, ctx: commands.Context, arg: Optional[str]):
         """Show the current queue."""
 
         if not ctx.voice_client:
             return await ctx.send("Not playing rn!")
 
         vc: wavelink.Player = ctx.voice_client
+
+        clear = ["clear", "c", "reset", "r"]
+
+        if arg and arg.lower() not in clear:
+            raise commands.BadArgument("Invalid argument provided.")
+
+        if arg and arg.lower() in clear:
+            vc.queue.clear()
+            return await ctx.send(
+                "Cleared queue." if arg.startswith("c") else "Reset queue."
+            )
 
         if not vc.queue:
             return await ctx.send("No songs queued!")
@@ -190,10 +206,25 @@ class MusicCog(commands.Cog):
 
     @commands.command(name="skip", aliases=["s"])
     @commands.check(voice_check)
-    async def skip_command(self, ctx: commands.Context):
+    async def skip_command(self, ctx: commands.Context, arg: Optional[str]):
         """Skip the current song."""
 
         vc: wavelink.Player = await get_player(ctx)
+
+        arg_all = ["all", "a"]
+        arg_force = ["force", "f"]
+
+        if arg and arg.lower() not in arg_all + arg_force:
+            raise commands.BadArgument("Invalid argument provided.")
+
+        if arg and arg.lower() in arg_all:
+            vc.queue.clear()
+            await vc.stop()
+            return await ctx.send("Skipped all songs!")
+
+        if arg and arg.lower() in arg_force:
+            await vc.stop()
+            return await ctx.send("Force skipped!")
 
         if not vc.queue:
             await vc.stop()
