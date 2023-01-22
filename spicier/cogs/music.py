@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Union
 
@@ -18,6 +19,13 @@ async def voice_check(ctx: commands.Context):
     return True
 
 
+async def get_player(ctx: commands.Context):
+    """Get the player for the guild."""
+    return ctx.voice_client or await ctx.author.voice.channel.connect(
+        cls=wavelink.Player
+    )
+
+
 class MusicCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -31,6 +39,18 @@ class MusicCog(commands.Cog):
     async def on_wavelink_node_ready(self, node: wavelink.Node):
         """Event fired when a node has finished connecting."""
         logging.info(f"Node: <{node.identifier}> is ready!")
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(
+        self, player: wavelink.Player, track: wavelink.Track, reason
+    ):
+        if not player.queue and not player.track:
+            await asyncio.sleep(300)
+            if not player.queue and not player.track:
+                await player.disconnect()
+
+        else:
+            await player.play(player.queue.get())
 
     @commands.command(name="connect", aliases=["join"])
     async def connect_command(
@@ -46,6 +66,22 @@ class MusicCog(commands.Cog):
 
         vc: wavelink.Player = await channel.connect(cls=wavelink.Player)
         return vc
+
+    @commands.command(name="disconnect", aliases=["leave"])
+    @commands.check(voice_check)
+    async def disconnect_command(self, ctx: commands.Context):
+        """Disconnect from a voice channel."""
+
+        vc: wavelink.Player = (
+            ctx.voice_client
+            or await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        )
+
+        if vc.queue:
+            vc.queue.clear()
+
+        await ctx.voice_client.disconnect()
+        return await ctx.send("Disconnected.")
 
     @commands.command()
     @commands.check(voice_check)
@@ -106,10 +142,7 @@ class MusicCog(commands.Cog):
     async def skip_command(self, ctx: commands.Context):
         """Skip the current song."""
 
-        vc: wavelink.Player = (
-            ctx.voice_client
-            or await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        )
+        vc: wavelink.Player = await get_player(ctx)
 
         if not vc.queue:
             await vc.stop()
@@ -123,10 +156,7 @@ class MusicCog(commands.Cog):
     async def pause_command(self, ctx: commands.Context):
         """Pause the current song."""
 
-        vc: wavelink.Player = (
-            ctx.voice_client
-            or await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        )
+        vc: wavelink.Player = await get_player(ctx)
 
         await vc.pause()
 
@@ -135,10 +165,7 @@ class MusicCog(commands.Cog):
     async def resume_command(self, ctx: commands.Context):
         """Resume the current song."""
 
-        vc: wavelink.Player = (
-            ctx.voice_client
-            or await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        )
+        vc: wavelink.Player = await get_player(ctx)
 
         await vc.resume()
 
@@ -146,10 +173,7 @@ class MusicCog(commands.Cog):
     async def now_playing_command(self, ctx: commands.Context):
         """Show the current song."""
 
-        vc: wavelink.Player = (
-            ctx.voice_client
-            or await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        )
+        vc: wavelink.Player = await get_player(ctx)
 
         if not vc.track:
             return await ctx.send("Nothing playing!")
@@ -157,6 +181,19 @@ class MusicCog(commands.Cog):
         return await ctx.send(
             f"Now playing: {vc.track}\n{vc.position}/{vc.track.duration}"
         )
+
+    @commands.command(name="volume", aliases=["vol"])
+    @commands.check(voice_check)
+    async def volume_command(self, ctx: commands.Context, *, vol: int):
+        """Change the player volume."""
+
+        vc: wavelink.Player = await get_player(ctx)
+
+        if not 0 < vol < 201:
+            return await ctx.send("Volume must be between 1 and 200.")
+
+        await vc.set_volume(vol)
+        return await ctx.send(f"Set the volume to {vol}.")
 
 
 async def setup(bot):
