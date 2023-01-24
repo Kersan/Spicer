@@ -120,10 +120,6 @@ class MusicCog(commands.Cog):
         If not, we will attempt to search for a song.
         """
 
-        def handle(tracks, vc: wavelink.Player):
-            for track in tracks:
-                vc.queue.put(track)
-
         tracks = []
         vc: wavelink.Player = ctx.voice_client
 
@@ -157,8 +153,9 @@ class MusicCog(commands.Cog):
         if not tracks:
             return await ctx.send("No match found!")
 
-        handle(tracks, vc)
         final = tracks[0]
+        for t in tracks:
+            vc.queue.put(t)
 
         if not vc.track:
             now = vc.queue.get()

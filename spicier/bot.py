@@ -5,8 +5,8 @@ import discord
 from discord import utils
 from discord.ext import commands
 
-from . import core
 from .config import Config
+from .core import ErrorHandler, tools
 from .database import Database
 
 
@@ -19,7 +19,7 @@ class SpicerBot(commands.Bot):
 
         super().__init__(
             command_prefix=self.config.prefix,
-            intents=core.set_intents(),
+            intents=tools.set_intents(),
             case_insensitive=True,
         )
 
@@ -42,13 +42,15 @@ class SpicerBot(commands.Bot):
         assert self.db.pool is not None, "Database was not initialized correctly!"
 
     async def setup_cogs(self):
+        await self.add_cog(ErrorHandler(self))
+
         for filename in os.listdir("spicier/cogs"):
             if filename.endswith(".py"):
                 await self.load_extension(f"spicier.cogs.{filename[:-3]}")
         logging.info(f"Loaded {len(self.extensions)} cogs!")
 
     async def setup_bot(self):
-        self.logger, self.handler = core.set_logging(logs_file=False)
+        self.logger, self.handler = tools.set_logging(logs_file=False)
         utils.setup_logging(handler=self.handler, level=logging.INFO)
 
     async def on_ready(self):
