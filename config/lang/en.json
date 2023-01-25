@@ -1,0 +1,4 @@
+{
+    "admin.reload.success.multiple": "Reloaded {} cogs!",
+    "admin.reload.success.single": "Reloaded {}"
+}

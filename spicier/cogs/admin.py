@@ -6,6 +6,7 @@ from discord.ext import commands
 class AdminCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.lang = self.bot.lang("en")
 
     @commands.group(name="admin", usage="[command]", aliases=["a"])
     @commands.is_owner()
@@ -21,9 +22,9 @@ class AdminCog(commands.Cog):
             for cog in cogs:
                 await self.bot.reload_extension(f"spicier.cogs.{cog}")
             return (
-                f"Reloaded {len(cogs)} cogs!"
+                self.lang["admin.reload.success.multiple"].format(len(cogs))
                 if len(cogs) > 1
-                else f"Reloaded {cogs[0]}"
+                else self.lang["admin.reload.success.single"].format(cogs[0])
             )
 
         msg = None
