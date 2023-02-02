@@ -6,7 +6,7 @@ from discord.ext import commands
 class AdminCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.lang = self.bot.lang("en")
+        self.lang = self.bot.config.lang("en")
 
     @commands.group(name="admin", usage="[command]", aliases=["a"])
     @commands.is_owner()
@@ -30,7 +30,9 @@ class AdminCog(commands.Cog):
         msg = None
         try:
             msg = await reloads(
-                cog.split(",") if cog else [cog[:-3].lower() for cog in self.bot.cogs]
+                cog.split(",")
+                if cog
+                else [cog[:-3].lower() for cog in self.bot.cogs if "cog" in cog.lower()]
             )
         except Exception as e:
             logging.error(e)

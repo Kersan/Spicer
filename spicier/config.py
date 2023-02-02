@@ -9,12 +9,14 @@ class BadConfig(Exception):
 
 class Config:
     def __init__(self, path: str = "config/default.json"):
-        self.path = path
+        self._path = path
         self.raw: json = self._get_config()
-        self.langs: dict = [self._get_lang(lang) for lang in self._get_lang_names()]
+
+        self.langs = {}
+        self.update_langs()
 
     def _get_config(self):
-        with open(self.path, "r", encoding="utf-8") as file:
+        with open(self._path, "r", encoding="utf-8") as file:
             json_cfg = file
             return json.load(json_cfg)
 
@@ -27,6 +29,9 @@ class Config:
         with open(f"config/lang/{lang}.json", "r", encoding="utf-8") as file:
             json_lang = file
             return json.load(json_lang)
+
+    def update_langs(self):
+        self.langs = {lang: self._get_lang(lang) for lang in self._get_lang_names()}
 
     def prop(self, prop: str):
         try:
@@ -55,4 +60,5 @@ class Config:
         return self.prop("delete_time")
 
     def lang(self, language: str) -> str:
-        return self.langs.get(language, {})
+        self.update_langs()
+        return self.langs[language] or self.langs["en"]

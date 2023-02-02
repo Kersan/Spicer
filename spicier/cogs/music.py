@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Union
 
 import wavelink
+from wavelink.errors import NodeOccupied
 from discord import VoiceChannel
 from discord.ext import commands
 
@@ -50,8 +51,11 @@ class MusicCog(commands.Cog):
         self.bot.loop.create_task(self.create_nodes())
 
     async def create_nodes(self):
-        await self.bot.wait_until_ready()
-        await wavelink.NodePool.create_node(bot=self.bot, **self.bot.config.lavalink)
+        try:
+            await self.bot.wait_until_ready()
+            await wavelink.NodePool.create_node(bot=self.bot, **self.bot.config.lavalink)
+        except NodeOccupied:
+            pass
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
