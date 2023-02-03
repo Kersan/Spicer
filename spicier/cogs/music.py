@@ -3,9 +3,9 @@ import logging
 from typing import Optional, Union
 
 import wavelink
+from discord import Guild, VoiceChannel, VoiceState
+from discord.ext import commands, tasks
 from wavelink.errors import NodeOccupied
-from discord import VoiceChannel
-from discord.ext import commands
 
 
 async def user_connected(ctx: commands.Context):
@@ -38,9 +38,12 @@ async def voice_check(ctx: commands.Context):
     return True
 
 
-async def get_player(ctx: commands.Context):
+async def get_player(case: Union[commands.Context, Guild]):
     """Get the player for the guild."""
-    return ctx.voice_client or await ctx.author.voice.channel.connect(
+    if isinstance(case, Guild):
+        return wavelink.NodePool.get_node().get_player(case)
+
+    return case.voice_client or await case.author.voice.channel.connect(
         cls=wavelink.Player
     )
 
@@ -53,7 +56,9 @@ class MusicCog(commands.Cog):
     async def create_nodes(self):
         try:
             await self.bot.wait_until_ready()
-            await wavelink.NodePool.create_node(bot=self.bot, **self.bot.config.lavalink)
+            await wavelink.NodePool.create_node(
+                bot=self.bot, **self.bot.config.lavalink
+            )
         except NodeOccupied:
             pass
 
@@ -199,11 +204,14 @@ class MusicCog(commands.Cog):
                 "Cleared queue." if arg.startswith("c") else "Reset queue."
             )
 
+        if vc.track and not vc.queue:
+            return await self.now_playing_command(ctx)
+
         if not vc.queue:
             return await ctx.send("No songs queued!")
 
         queue = "\n".join(f"{i} - {t.title}" for i, t in enumerate(vc.queue, start=1))
-        await ctx.send(f"```{queue}```")
+        await ctx.send(f"Now playing: {vc.track}\n```{queue}```")
 
     @commands.command(name="skip", aliases=["s"])
     @commands.check(voice_check)
@@ -279,6 +287,29 @@ class MusicCog(commands.Cog):
         await vc.set_volume(vol)
 
         return await ctx.send(f"Set the volume to {vol}.")
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self, member, before: VoiceState, after: VoiceState
+    ):
+        if member.id == self.bot.user.id and after.channel is None:
+            player = await get_player(before.channel.guild)
+            if player is not None:
+                await player.disconnect()
+
+        elif before and len(after.channel.members) == 1:
+            player = await get_player(after.channel.guild)
+            await self.dead(player, after)
+
+    @tasks.loop(count=1)
+    async def dead(self, player: wavelink.Player, voice: VoiceState):
+        print(voice.channel.members)
+        if voice and len(voice.channel.members) == 1:
+            await player.disconnect()
+
+    @dead.before_loop
+    async def before_disconnect(self):
+        await asyncio.sleep(5)
 
 
 async def setup(bot):
