@@ -297,15 +297,22 @@ class MusicCog(commands.Cog):
             if player is not None:
                 await player.disconnect()
 
-        elif before and len(after.channel.members) == 1:
-            player = await get_player(after.channel.guild)
-            await self.dead(player, after)
+        elif (
+            not after.channel
+            and self.bot.user in before.channel.members
+            and len(before.channel.members) <= 2
+        ):
+            player = await get_player(before.channel.guild)
+            await self.dead(player, before)
 
     @tasks.loop(count=1)
     async def dead(self, player: wavelink.Player, voice: VoiceState):
         print(voice.channel.members)
         if voice and len(voice.channel.members) == 1:
-            await player.disconnect()
+            try:
+                await player.disconnect()
+            except Exception:
+                pass
 
     @dead.before_loop
     async def before_disconnect(self):
