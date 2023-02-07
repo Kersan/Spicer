@@ -59,6 +59,10 @@ class Config:
     def delete_time(self) -> int:
         return self.prop("delete_time")
 
+    @property
+    def leave_time(self) -> int:
+        return self.prop("leave_time")
+
     def lang(self, language: str) -> str:
         self.update_langs()
         return self.langs[language] or self.langs["en"]

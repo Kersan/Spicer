@@ -52,6 +52,7 @@ class MusicCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.bot.loop.create_task(self.create_nodes())
+        self.config = self.bot.config
 
     async def create_nodes(self):
         try:
@@ -307,7 +308,6 @@ class MusicCog(commands.Cog):
 
     @tasks.loop(count=1)
     async def dead(self, player: wavelink.Player, voice: VoiceState):
-        print(voice.channel.members)
         if voice and len(voice.channel.members) == 1:
             try:
                 await player.disconnect()
@@ -316,7 +316,7 @@ class MusicCog(commands.Cog):
 
     @dead.before_loop
     async def before_disconnect(self):
-        await asyncio.sleep(5)
+        await asyncio.sleep(self.config.leave_time)
 
 
 async def setup(bot):

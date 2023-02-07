@@ -38,6 +38,9 @@ class ErrorHandler(commands.Cog):
             logging.debug(str(error))
             return
 
+        if isinstance(error, commands_errors.CheckFailure):
+            return
+
         if ctx.message.author.guild_permissions.administrator:
             await ctx.reply(
                 f"Coś poszło nie tak: ```{error}```",
