@@ -12,3 +12,6 @@ default.json
 
 # Logs
 logs/*
+
+# Tests
+.pytest_cache

@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 
-from spicier import SpicerBot
+from spicier.bot import SpicerBot
 
 
 def get_token():
