@@ -21,7 +21,6 @@ class Config:
             return json.load(json_cfg)
 
     def _get_lang_names(self):
-        """Gets all json files names from /config/lang/ and returns them as a dict"""
         files = os.listdir("config/lang/")
         return {file[:-5]: file for file in files if file.endswith(".json")}
 

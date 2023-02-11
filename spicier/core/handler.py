@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from discord import Message
 from discord.ext import commands
@@ -48,6 +49,8 @@ class EventHandler(commands.Cog):
             )
 
         logging.error(str(error))
+
+        # raise error
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: Message, after: Message):

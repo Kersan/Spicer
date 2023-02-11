@@ -4,6 +4,7 @@ import wavelink
 from discord import Guild, VoiceChannel
 from discord.ext import commands
 from wavelink.errors import NodeOccupied
+from wavelink.queue import WaitQueue
 
 
 async def user_connected(ctx: commands.Context) -> bool:
@@ -32,10 +33,15 @@ async def player_alive(player: wavelink.Player) -> bool:
     return bool(player.queue.is_empty and not player.track)
 
 
-async def get_player(case: Union[commands.Context, Guild]) -> wavelink.Player:
+async def get_player(
+    case: Union[commands.Context, Guild, VoiceChannel]
+) -> wavelink.Player:
     """Get the player for the guild."""
     if isinstance(case, Guild):
         return wavelink.NodePool.get_node().get_player(case)
+
+    if not case.voice_client and isinstance(case, VoiceChannel):
+        return await case.connect(cls=wavelink.Player)
 
     return case.voice_client or await case.author.voice.channel.connect(
         cls=wavelink.Player
@@ -56,8 +62,11 @@ class MusicService:
     async def handle_connect(
         self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
+        if channel and channel.guild != ctx.guild:
+            raise commands.BadArgument("Channel not found.")
+
         try:
-            vc: wavelink.Player = await get_player(ctx)
+            vc: wavelink.Player = await get_player(channel or ctx)
             await vc.connect(cls=wavelink.Player)
         except AttributeError:
             # TODO: throw error
@@ -115,9 +124,78 @@ class MusicService:
                 raise commands.BadArgument(f"Could not find any results for {track}.")
 
         if not tracks:
+            # TODO: throw error
             return await ctx.send("No match found!")
 
         for t in tracks:
             vc.queue.put(t)
 
         return tracks, vc
+
+    async def handle_queue(
+        self,
+        ctx: commands.Context,
+        clear: Callable,
+        now_playing: Callable,
+        arg: str = None,
+    ) -> WaitQueue:
+        clear = ["clear", "c", "reset", "r"]
+
+        vc: wavelink.Player = ctx.voice_client
+
+        if arg and arg.lower() not in clear:
+            raise commands.BadArgument("Invalid argument provided.")
+
+        if arg and arg.lower() in clear:
+            await clear(ctx)
+            return
+
+        if vc.track and not vc.queue.is_empty:
+            await now_playing(ctx)
+
+        return vc.queue
+
+    async def handle_skip(
+        self,
+        ctx: commands.Context,
+        force_skip: Callable,
+        skip_all: Callable,
+        arg: str = None,
+    ) -> wavelink.Player:
+        vc: wavelink.Player = await get_player(ctx)
+
+        arg_all = ["all", "a"]
+        arg_force = ["force", "f"]
+
+        if arg and arg.lower() not in arg_all + arg_force:
+            raise commands.BadArgument("Invalid argument provided.")
+
+        if arg and arg.lower() in arg_all:
+            await skip_all(ctx)
+
+        if arg and arg.lower() in arg_force:
+            await force_skip(ctx)
+
+        if not vc.queue:
+            await vc.stop()
+
+        return vc
+
+    async def handle_skip_all(self, ctx: commands.Context) -> None:
+        vc: wavelink.Player = await get_player(ctx)
+
+        if not vc.queue or vc.queue.is_empty:
+            # TODO: throw error (already empty)
+            return
+
+        vc.queue.clear()
+        await vc.stop()
+
+    async def handle_force_skip(self, ctx: commands.Context) -> wavelink.Player:
+        vc: wavelink.Player = await get_player(ctx)
+
+        if not vc.queue or vc.queue.is_empty:
+            # TODO: throw error (already empty)
+            return
+
+        await vc.stop()

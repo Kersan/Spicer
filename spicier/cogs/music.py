@@ -5,6 +5,7 @@ from typing import Optional, Union
 import wavelink
 from discord import Guild, VoiceChannel, VoiceState
 from discord.ext import commands, tasks
+from wavelink.abc import Playable
 from wavelink.errors import NodeOccupied
 
 from .service import (
@@ -38,10 +39,16 @@ class MusicCog(commands.Cog, MusicService):
             return
 
         if await player_alive(player):
-            await self.empty_leave(player)
+            return await self.empty_leave(player)
 
-        else:
-            await player.play(player.queue.get())
+        if player.queue.is_empty:
+            # TODO: Get queue text channel and send message
+            return
+
+        next: Playable = player.queue.get()
+        await player.play(next)
+
+        # TODO: Get queue text channel and send message
 
     @commands.command(name="connect", aliases=["join"])
     @commands.check(user_connected)
@@ -113,56 +120,55 @@ class MusicCog(commands.Cog, MusicService):
         if not ctx.voice_client:
             return await ctx.send("Not playing rn!")
 
-        vc: wavelink.Player = ctx.voice_client
+        queue = await self.handle_queue(
+            ctx, clear=self.clear_command, now_playing=self.now_playing_command, arg=arg
+        )
 
-        clear = ["clear", "c", "reset", "r"]
+        if not queue:
+            return await ctx.send("No songs queued.")
 
-        if arg and arg.lower() not in clear:
-            raise commands.BadArgument("Invalid argument provided.")
+        display = "\n".join(f"{i} - {t.title}" for i, t in enumerate(queue, start=1))
+        await ctx.send(f"Kolejka: ```{display}```")
 
-        if arg and arg.lower() in clear:
-            vc.queue.clear()
-            return await ctx.send(
-                "Cleared queue." if arg.startswith("c") else "Reset queue."
-            )
+    @commands.command(name="clear", aliases=["reset"])
+    @commands.check(voice_check)
+    async def clear_command(self, ctx: commands.Context):
+        """Clear the current queue."""
 
-        if vc.track and not vc.queue:
-            return await self.now_playing_command(ctx)
+        vc: wavelink.Player = await get_player(ctx)
+        vc.queue.clear()
 
-        if not vc.queue:
-            return await ctx.send("No songs queued!")
-
-        queue = "\n".join(f"{i} - {t.title}" for i, t in enumerate(vc.queue, start=1))
-        await ctx.send(f"Now playing: {vc.track}\n```{queue}```")
+        await ctx.send("Cleared the queue!")
 
     @commands.command(name="skip", aliases=["s"])
     @commands.check(voice_check)
     async def skip_command(self, ctx: commands.Context, arg: Optional[str]):
         """Skip the current song."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await self.handle_skip(
+            ctx, self.force_skip_command, self.skip_all_command, arg
+        )
 
-        arg_all = ["all", "a"]
-        arg_force = ["force", "f"]
+        if vc.queue:
+            await vc.play(vc.queue.get())
 
-        if arg and arg.lower() not in arg_all + arg_force:
-            raise commands.BadArgument("Invalid argument provided.")
+    @commands.command(name="skip_all", aliases=["as"])
+    @commands.check(voice_check)
+    async def skip_all_command(self, ctx: commands.Context):
+        """Skip all songs in the queue."""
 
-        if arg and arg.lower() in arg_all:
-            vc.queue.clear()
-            await vc.stop()
-            return await ctx.send("Skipped all songs!")
+        await self.handle_skip_all(ctx)
+        return await ctx.send("Skipped all songs!")
 
-        if arg and arg.lower() in arg_force:
-            await vc.stop()
-            return await ctx.send("Force skipped!")
+    @commands.command(name="force_skip", aliases=["fs"])
+    @commands.check(voice_check)
+    async def force_skip_command(self, ctx: commands.Context):
+        """Force skip the current song."""
 
-        if not vc.queue:
-            await vc.stop()
-            return await ctx.send("No songs queued, stopping!")
+        vc: wavelink.Player = await self.handle_force_skip(ctx)
 
-        await vc.play(vc.queue.get())
-        return await ctx.send(f"Skipped, now playing: {vc.track}")
+        if vc.queue and not vc.track:
+            vc.play(vc.queue.get())
 
     @commands.command(name="pause", aliases=["stop"])
     @commands.check(voice_check)
@@ -170,7 +176,6 @@ class MusicCog(commands.Cog, MusicService):
         """Pause the current song."""
 
         vc: wavelink.Player = await get_player(ctx)
-
         await vc.pause()
 
     @commands.command(name="resume")
@@ -179,7 +184,6 @@ class MusicCog(commands.Cog, MusicService):
         """Resume the current song."""
 
         vc: wavelink.Player = await get_player(ctx)
-
         await vc.resume()
 
     @commands.command(name="now_playing", aliases=["np"])
