@@ -47,4 +47,4 @@ class ErrorHandler(commands.Cog):
                 delete_after=self.config.delete_time,
             )
 
-        logging.debug(str(error))
+        logging.error(str(error))

@@ -50,8 +50,10 @@ class SpicerBot(commands.Bot):
         logging.info(f"Loaded {len(self.extensions)} cogs!")
 
     async def setup_bot(self):
-        self.logger, self.handler = tools.set_logging(logs_file=False)
-        utils.setup_logging(handler=self.handler, level=logging.INFO)
+        self.logger, self.handler = tools.set_logging(
+            logs_file=False, console_level=logging.DEBUG
+        )
+        utils.setup_logging(handler=self.handler, level=logging.DEBUG)
 
     async def on_ready(self):
         channel = self.get_channel(890257740868485123)

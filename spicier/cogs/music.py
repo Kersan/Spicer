@@ -7,65 +7,27 @@ from discord import Guild, VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.errors import NodeOccupied
 
-
-async def user_connected(ctx: commands.Context):
-    """Check if the user is connected to a voice channel."""
-    if not ctx.author.voice:
-        await ctx.send(
-            "You have to be connected to a voice channel to use this command."
-        )
-        return False
-    return True
-
-
-async def bot_connected(ctx: commands.Context):
-    """Check if the bot is connected to a voice channel."""
-    if not ctx.voice_client:
-        await ctx.send("I am not connected to a voice channel.")
-        return False
-    return True
+from .service import (
+    MusicService,
+    bot_connected,
+    get_player,
+    player_alive,
+    user_connected,
+    voice_check,
+)
 
 
-async def voice_check(ctx: commands.Context):
-    """Check if the bot and user are connected to the same voice channel."""
-    if not await user_connected(ctx):
-        return False
-    if not await bot_connected(ctx):
-        return False
-    if ctx.author.voice.channel != ctx.voice_client.channel:
-        await ctx.send("You have to be in the same voice channel as me.")
-        return False
-    return True
-
-
-async def get_player(case: Union[commands.Context, Guild]):
-    """Get the player for the guild."""
-    if isinstance(case, Guild):
-        return wavelink.NodePool.get_node().get_player(case)
-
-    return case.voice_client or await case.author.voice.channel.connect(
-        cls=wavelink.Player
-    )
-
-
-class MusicCog(commands.Cog):
+class MusicCog(commands.Cog, MusicService):
     def __init__(self, bot: commands.Bot):
+        self.config = bot.config
         self.bot = bot
-        self.bot.loop.create_task(self.create_nodes())
-        self.config = self.bot.config
 
-    async def create_nodes(self):
-        try:
-            await self.bot.wait_until_ready()
-            await wavelink.NodePool.create_node(
-                bot=self.bot, **self.bot.config.lavalink
-            )
-        except NodeOccupied:
-            pass
+        super().__init__(bot)
+
+        bot.loop.create_task(self.create_nodes(self.config.lavalink))
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
-        """Event fired when a node has finished connecting."""
         logging.info(f"Node: <{node.identifier}> is ready!")
 
     @commands.Cog.listener()
@@ -75,10 +37,8 @@ class MusicCog(commands.Cog):
         if player.track:
             return
 
-        if player.queue.is_empty:
-            await asyncio.sleep(300)
-            if not player.queue and not player.track:
-                await player.disconnect()
+        if await player_alive(player):
+            await self.empty_leave(player)
 
         else:
             await player.play(player.queue.get())
@@ -89,30 +49,20 @@ class MusicCog(commands.Cog):
         self, ctx: commands.Context, *, channel: VoiceChannel = None
     ):
         """Connect to a voice channel."""
-        try:
-            channel = channel or ctx.author.voice.channel
-        except AttributeError:
-            return await ctx.send(
-                "No voice channel to connect to. Please either provide one or join one."
-            )
+        if ctx.voice_client:
+            # TODO: Check if bot is alone in channel
+            pass
 
-        vc: wavelink.Player = await channel.connect(cls=wavelink.Player)
-        return vc
+        if await voice_check(ctx):
+            return await ctx.send("Jestem z tobą już wariacie 😎")
+
+        return await self.handle_connect(ctx, channel=channel)
 
     @commands.command(name="disconnect", aliases=["leave"])
     @commands.check(voice_check)
     async def disconnect_command(self, ctx: commands.Context):
         """Disconnect from a voice channel."""
-
-        vc: wavelink.Player = (
-            ctx.voice_client
-            or await ctx.author.voice.channel.connect(cls=wavelink.Player)
-        )
-
-        if vc.queue:
-            vc.queue.clear()
-
-        await ctx.voice_client.disconnect()
+        await self.handle_disconnect(ctx)
         return await ctx.send("Disconnected.")
 
     @commands.command()
@@ -123,54 +73,25 @@ class MusicCog(commands.Cog):
         *,
         track: Union[wavelink.YouTubeTrack, wavelink.YouTubePlaylist, str, None],
     ):
-        """Play a song with the given search query.
-        If not connected, connect to our voice channel.
+        """Play a song* with the given search query."""
 
-        When the query is a URL, we will attempt to play the song.
-        If not, we will attempt to search for a song.
-        """
+        tracks, vc = await self.handle_play(
+            ctx=ctx,
+            track=track,
+            connect=self.connect_command,
+            resume=self.resume_command,
+        )
 
-        tracks = []
-        vc: wavelink.Player = ctx.voice_client
-
-        if not vc:
-            vc = await self.connect_command(ctx, channel=ctx.author.voice.channel)
-
-        if not track and vc.is_paused:
-            await vc.resume()
-            return await self.resume_command(ctx)
-
-        elif not track:
-            raise commands.BadArgument("No track provided.")
-
-        if isinstance(track, wavelink.YouTubeTrack):
-            tracks.append(track)
-
-        if isinstance(track, wavelink.YouTubePlaylist):
-            tracks.extend([t for t in track.tracks])
-
-        elif isinstance(track, str):
-            try:
-                result = await wavelink.YouTubeTrack.search(
-                    query=track, return_first=True
-                )
-
-                if result:
-                    tracks.append(result)
-            except Exception:
-                raise commands.BadArgument(f"Could not find any results for {track}.")
-
-        if not tracks:
-            return await ctx.send("No match found!")
+        if not vc or not tracks:
+            return
 
         final = tracks[0]
-        for t in tracks:
-            vc.queue.put(t)
 
         if not vc.track:
             now = vc.queue.get()
             await vc.play(now)
 
+            # TODO: Handle this message better 😪
             await ctx.send(
                 f"Added to queue {len(tracks)} songs. \nNow playing: {final.title}"
                 if len(tracks) > 1
@@ -317,6 +238,12 @@ class MusicCog(commands.Cog):
     @dead.before_loop
     async def before_disconnect(self):
         await asyncio.sleep(self.config.leave_time)
+
+    @tasks.loop(count=1)
+    async def empty_leave(self, player: wavelink.Player):
+        await asyncio.sleep(300)
+        if await player_alive(player):
+            await player.disconnect()
 
 
 async def setup(bot):
