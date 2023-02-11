@@ -19,5 +19,6 @@
     },
 
     "delete_after": true,
-    "delete_time": 10
+    "delete_time": 10,
+    "leave_time": 5
 }
