@@ -80,7 +80,7 @@ class MusicCog(commands.Cog, MusicService):
             track=track,
             connect=self.connect_command,
             resume=self.resume_command,
-        )
+        ) or (None, None)
 
         if not vc or not tracks:
             return

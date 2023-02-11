@@ -82,8 +82,6 @@ class MusicService:
         connect: Callable,
         resume: Callable,
     ):
-        print(connect)
-        print(resume)
 
         if not await bot_connected(ctx) and not track:
             connect(ctx, channel=ctx.author.voice.channel)

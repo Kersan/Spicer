@@ -1,11 +1,11 @@
 import logging
 
-from discord import errors as discord_errors
+from discord import Message
 from discord.ext import commands
 from discord.ext.commands import errors as commands_errors
 
 
-class ErrorHandler(commands.Cog):
+class EventHandler(commands.Cog):
     """Handles bot errors"""
 
     def __init__(self, bot: commands.Bot) -> None:
@@ -48,3 +48,13 @@ class ErrorHandler(commands.Cog):
             )
 
         logging.error(str(error))
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before: Message, after: Message):
+        if before.content != after.content:
+            await self.bot.process_commands(after)
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        if self.config.delete_after:
+            await ctx.message.delete(delay=self.config.delete_time)

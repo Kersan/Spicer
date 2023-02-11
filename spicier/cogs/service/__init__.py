@@ -1,2 +1,8 @@
-from .music import MusicService
-from .music import (user_connected, bot_connected, voice_check, player_alive, get_player)
+from .music import (
+    MusicService,
+    bot_connected,
+    get_player,
+    player_alive,
+    user_connected,
+    voice_check,
+)

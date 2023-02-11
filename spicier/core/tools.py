@@ -4,6 +4,14 @@ from datetime import date
 from os import path
 
 from discord import Intents
+from discord.ext import commands
+
+
+async def load_cogs(bot: commands.Bot, cogs_dir: str = "spicier/cogs") -> None:
+    for filename in os.listdir(cogs_dir):
+        if filename.endswith(".py"):
+            await bot.load_extension(f"spicier.cogs.{filename[:-3]}")
+    logging.info(f"Loaded {len(bot.extensions)} cogs!")
 
 
 def set_intents(intents: Intents = Intents.default()) -> Intents:
@@ -39,23 +47,22 @@ def set_logging(
 
     # Change the name of the file if it already exists
     if path.exists(file_path):
-        __format_file(file_path)
+        _format_file(file_path)
 
     if logs_file:
-        file_handler = __setup_file_handler(file_path, log_formatter, file_level)
+        file_handler = _setup_file_handler(file_path, log_formatter, file_level)
         logger.addHandler(file_handler)
         logger_root.addHandler(file_handler)
 
         assert path.exists(file_path)
-        
 
-    console_handler = __setup_console_handler(logging, log_formatter, console_level)
+    console_handler = _setup_console_handler(logging, log_formatter, console_level)
     logger.addHandler(console_handler)
 
     return logger, console_handler
 
 
-def __setup_file_handler(file_path, log_formatter, file_level):
+def _setup_file_handler(file_path, log_formatter, file_level) -> logging.FileHandler:
     """Creates a file handler for the logger"""
     handler = logging.FileHandler(filename=file_path, encoding="utf-8", mode="w")
     handler.setFormatter(log_formatter)
@@ -64,7 +71,9 @@ def __setup_file_handler(file_path, log_formatter, file_level):
     return handler
 
 
-def __setup_console_handler(logging, log_formatter, console_level):
+def _setup_console_handler(
+    logging, log_formatter, console_level
+) -> logging.StreamHandler:
     """Creates a console handler for the logger"""
     handler = logging.StreamHandler()
     handler.setFormatter(log_formatter)
@@ -73,7 +82,7 @@ def __setup_console_handler(logging, log_formatter, console_level):
     return handler
 
 
-def __format_file(file_path):
+def _format_file(file_path):
     """Change the name of the file if it already exists"""
     now = str(date.today())[2:]
     count = 0
