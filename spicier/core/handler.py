@@ -25,7 +25,7 @@ class EventHandler(commands.Cog):
 
         if isinstance(error, commands_errors.MissingRequiredArgument):
             await ctx.reply(
-                f"Required arguments not found: `{error.needed}` \nInstead passed: `{error.arguments}`!",
+                f"Missing required argument: `{error.param}`",
                 delete_after=self.config.delete_time,
             )
             logging.debug(str(error))

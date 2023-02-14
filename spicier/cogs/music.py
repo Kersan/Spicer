@@ -3,10 +3,9 @@ import logging
 from typing import Optional, Union
 
 import wavelink
-from discord import Guild, VoiceChannel, VoiceState
+from discord import VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.abc import Playable
-from wavelink.errors import NodeOccupied
 
 from .service import (
     MusicService,
@@ -200,12 +199,15 @@ class MusicCog(commands.Cog, MusicService):
             f"Now playing: {vc.track}\n{vc.position}/{vc.track.duration}"
         )
 
-    @commands.command(name="volume", aliases=["vol"])
+    @commands.command(name="volume", aliases=["vol", "v"])
     @commands.check(voice_check)
-    async def volume_command(self, ctx: commands.Context, *, vol: int):
+    async def volume_command(self, ctx: commands.Context, *, vol: int = None):
         """Change the player volume."""
 
         vc: wavelink.Player = await get_player(ctx)
+
+        if not vol:
+            return await ctx.send(f"Current volume: {vc.volume}")
 
         if not 0 < vol < 201:
             return await ctx.send("Volume must be between 1 and 200.")
