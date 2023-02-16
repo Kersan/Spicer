@@ -6,6 +6,8 @@ from discord.ext import commands
 from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
+from spicier.errors import QueueEmpty, SearchNotFound
+
 
 async def user_connected(ctx: commands.Context) -> bool:
     """Check: User connected to voice channel"""
@@ -29,8 +31,7 @@ async def voice_check(ctx: commands.Context) -> bool:
 
 
 async def player_alive(player: wavelink.Player) -> bool:
-    """Check: Player is alive"""
-    return bool(player.queue.is_empty and not player.track)
+    return bool(not player.queue.is_empty or player.track)
 
 
 async def get_player(
@@ -69,10 +70,11 @@ class MusicService:
             vc: wavelink.Player = await get_player(channel or ctx)
             await vc.connect(cls=wavelink.Player)
         except AttributeError:
-            # TODO: throw error
             await ctx.send(
                 "No voice channel to connect to. Please either provide one or join one."
             )
+            raise commands.ChannelNotFound
+
         finally:
             return vc
 
@@ -124,8 +126,7 @@ class MusicService:
                 raise commands.BadArgument(f"Could not find any results for {track}.")
 
         if not tracks:
-            # TODO: throw error
-            return await ctx.send("No match found!")
+            raise SearchNotFound(track)
 
         for t in tracks:
             vc.queue.put(t)
@@ -185,8 +186,7 @@ class MusicService:
         vc: wavelink.Player = await get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
-            # TODO: throw error (already empty)
-            return
+            raise QueueEmpty("Queue is already empty.")
 
         vc.queue.clear()
         await vc.stop()
@@ -195,7 +195,9 @@ class MusicService:
         vc: wavelink.Player = await get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
-            # TODO: throw error (already empty)
-            return
+            raise QueueEmpty("Queue is already empty.")
 
         await vc.stop()
+
+    def is_alone(ctx: commands.Context) -> bool:
+        return len(ctx.voice_client.channel.members) == 1

@@ -37,9 +37,6 @@ class MusicCog(commands.Cog, MusicService):
         if player.track:
             return
 
-        if await player_alive(player):
-            return await self.empty_leave(player)
-
         if player.queue.is_empty:
             # TODO: Get queue text channel and send message
             return
@@ -55,9 +52,8 @@ class MusicCog(commands.Cog, MusicService):
         self, ctx: commands.Context, *, channel: VoiceChannel = None
     ):
         """Connect to a voice channel."""
-        if ctx.voice_client:
-            # TODO: Check if bot is alone in channel
-            pass
+        if ctx.voice_client and not self.is_alone(ctx):
+            return await ctx.send("I'm already in a voice channel.")
 
         if await voice_check(ctx):
             return await ctx.send("Jestem z tobą już wariacie 😎")
@@ -244,12 +240,6 @@ class MusicCog(commands.Cog, MusicService):
     @dead.before_loop
     async def before_disconnect(self):
         await asyncio.sleep(self.config.leave_time)
-
-    @tasks.loop(count=1)
-    async def empty_leave(self, player: wavelink.Player):
-        await asyncio.sleep(300)
-        if await player_alive(player):
-            await player.disconnect()
 
 
 async def setup(bot):
