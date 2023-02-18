@@ -1,3 +1,4 @@
+from .filters import CustomFilters
 from .music import (
     MusicService,
     bot_connected,

@@ -237,5 +237,12 @@ class MusicService:
         await vc.seek(position * 1000)
         return get_time(position)
 
+    async def handle_filter(self, vc: wavelink.Player, mode: str):
+
+        if not mode in self.filters.modes.keys():
+            raise WrongArgument("Invalid filter mode.")
+
+        await vc.set_filter(self.filters.modes[mode])
+
     def is_alone(ctx: commands.Context) -> bool:
         return len(ctx.voice_client.channel.members) == 1

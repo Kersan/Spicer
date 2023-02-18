@@ -1,13 +1,16 @@
 import asyncio
 import logging
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import wavelink
 from discord import VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.abc import Playable
 
+from spicier.errors import WrongArgument
+
 from .service import (
+    CustomFilters,
     MusicService,
     bot_connected,
     get_player,
@@ -21,30 +24,11 @@ class MusicCog(commands.Cog, MusicService):
     def __init__(self, bot: commands.Bot):
         self.config = bot.config
         self.bot = bot
+        self.filters = CustomFilters()
 
         super().__init__(bot)
 
         bot.loop.create_task(self.create_nodes(self.config.lavalink))
-
-    @commands.Cog.listener()
-    async def on_wavelink_node_ready(self, node: wavelink.Node):
-        logging.info(f"Node: <{node.identifier}> is ready!")
-
-    @commands.Cog.listener()
-    async def on_wavelink_track_end(
-        self, player: wavelink.Player, track: wavelink.Track, reason
-    ):
-        if player.track:
-            return
-
-        if player.queue.is_empty:
-            # TODO: Get queue text channel and send message
-            return
-
-        next: Playable = player.queue.get()
-        await player.play(next)
-
-        # TODO: Get queue text channel and send message
 
     @commands.command(name="connect", aliases=["join"])
     @commands.check(user_connected)
@@ -224,6 +208,67 @@ class MusicCog(commands.Cog, MusicService):
 
         message = await self.handle_seek(ctx, vc, time)
         return await ctx.send(f"Seeked to {message}.")
+
+    @commands.group(name="filter")
+    async def filter_group(self, ctx: commands.Context):
+        """Filter group."""
+        if not ctx.invoked_subcommand:
+            return await ctx.send_help(ctx.command)
+
+    @filter_group.command(name="list")
+    async def filter_list_command(self, ctx: commands.Context):
+        """List all available filters."""
+
+        return await ctx.send(
+            f"Available filters: ```{', '.join(self.filters.modes.keys())}```"
+        )
+
+    @filter_group.command(name="set")
+    @commands.check(voice_check)
+    async def filter_set_command(
+        self, ctx: commands.Context, *, mode: Literal["boost", "piano", "metal", "flat"]
+    ):
+        """Set the filter mode."""
+        vc: wavelink.Player = await get_player(ctx)
+
+        if not vc.track:
+            return await ctx.send("Nothing playing!")
+
+        await self.handle_finter(ctx, mode)
+
+        return await ctx.send("Set the filter mode to {mode}.")
+
+    @filter_group.command(name="reset", aliases=["clear"])
+    @commands.check(voice_check)
+    async def filter_reset_command(self, ctx: commands.Context):
+        """Reset the filter mode."""
+
+        vc: wavelink.Player = await get_player(ctx)
+
+        if not vc.track:
+            return await ctx.send("Nothing playing!")
+
+        await vc.set_filter(self.filters.clear, seek=True)
+
+    @commands.Cog.listener()
+    async def on_wavelink_node_ready(self, node: wavelink.Node):
+        logging.info(f"Node: <{node.identifier}> is ready!")
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(
+        self, player: wavelink.Player, track: wavelink.Track, reason
+    ):
+        if player.track:
+            return
+
+        if player.queue.is_empty:
+            # TODO: Get queue text channel and send message
+            return
+
+        next: Playable = player.queue.get()
+        await player.play(next)
+
+        # TODO: Get queue text channel and send message
 
     @commands.Cog.listener()
     async def on_voice_state_update(
