@@ -53,9 +53,7 @@ class EventHandler(commands.Cog):
             pass
 
         elif isinstance(error, commands_errors.BadArgument):
-            await self.send_error(
-                ctx, f"Something went wrong with the argument: `{error}`", error
-            )
+            await self.send_error(ctx, f"Unvalid argument: `{error.message}`", error)
 
         elif isinstance(error, commands_errors.MissingRequiredArgument):
             await self.send_error(

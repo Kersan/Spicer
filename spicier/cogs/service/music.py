@@ -1,3 +1,4 @@
+import re
 from typing import Callable, Union
 
 import wavelink
@@ -33,6 +34,12 @@ async def voice_check(ctx: commands.Context) -> bool:
 
 async def player_alive(player: wavelink.Player) -> bool:
     return bool(not player.queue.is_empty or player.track)
+
+
+def get_time(seconds: Union[int, float]) -> str:
+    """Convert seconds to minutes and seconds."""
+    minutes, seconds = divmod(seconds, 60)
+    return f"{int(minutes)}:{int(seconds):02}"
 
 
 async def get_player(
@@ -197,6 +204,33 @@ class MusicService:
             raise QueueEmpty("Queue is already empty.")
 
         await vc.stop()
+
+    async def handle_seek(
+        self, ctx: commands.Context, vc: wavelink.Player, time: str
+    ) -> str:
+        if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
+            position = int(time)
+            await vc.seek(position * 1000)
+            return get_time(position)
+
+        elif time.isdigit():
+            raise commands.BadArgument("Given time must be inside <0, song duration>.")
+
+        if not (match := re.match(r"(\d{1,2}):(\d{2})", time)):
+            raise commands.BadArgument("Invalid time format. Use mm:ss.")
+
+        minutes, seconds = map(int, match.groups())
+
+        if minutes > vc.track.duration:
+            raise commands.BadArgument("Minutes must be less than the song duration.")
+
+        if seconds > 59:
+            raise commands.BadArgument("Seconds must be less than 60.")
+
+        position = minutes * 60 + seconds
+
+        await vc.seek(position * 1000)
+        return get_time(position)
 
     def is_alone(ctx: commands.Context) -> bool:
         return len(ctx.voice_client.channel.members) == 1

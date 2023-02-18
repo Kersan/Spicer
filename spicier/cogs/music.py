@@ -11,7 +11,7 @@ from .service import (
     MusicService,
     bot_connected,
     get_player,
-    player_alive,
+    get_time,
     user_connected,
     voice_check,
 )
@@ -58,7 +58,8 @@ class MusicCog(commands.Cog, MusicService):
         if await voice_check(ctx):
             return await ctx.send("Jestem z tobą już wariacie 😎")
 
-        return await self.handle_connect(ctx, channel=channel)
+        vc: wavelink.Player = await self.handle_connect(ctx, channel=channel)
+        return await ctx.send(f"Connected to {vc.channel}.")
 
     @commands.command(name="disconnect", aliases=["leave"])
     @commands.check(voice_check)
@@ -94,18 +95,17 @@ class MusicCog(commands.Cog, MusicService):
             await vc.play(now)
 
             # TODO: Handle this message better 😪
-            await ctx.send(
+            return await ctx.send(
                 f"Added to queue {len(tracks)} songs. \nNow playing: {final.title}"
                 if len(tracks) > 1
                 else f"Now playing: {final.title}"
             )
 
-        else:
-            await ctx.send(
-                f"Added to queue {len(tracks)} songs."
-                if len(tracks) > 1
-                else f"Added {final.title} to queue."
-            )
+        await ctx.send(
+            f"Added to queue {len(tracks)} songs."
+            if len(tracks) > 1
+            else f"Added {final.title} to queue."
+        )
 
     @commands.command(name="queue", aliases=["q"])
     @commands.check(bot_connected)
@@ -135,7 +135,7 @@ class MusicCog(commands.Cog, MusicService):
 
         await ctx.send("Cleared the queue!")
 
-    @commands.command(name="skip", aliases=["s"])
+    @commands.command(name="skip", aliases=["s", "next"])
     @commands.check(voice_check)
     async def skip_command(self, ctx: commands.Context, arg: Optional[str]):
         """Skip the current song."""
@@ -192,7 +192,7 @@ class MusicCog(commands.Cog, MusicService):
             return await ctx.send("Nothing playing!")
 
         return await ctx.send(
-            f"Now playing: {vc.track}\n{vc.position}/{vc.track.duration}"
+            f"Now playing: {vc.track}\n{get_time(vc.position)} - {get_time(vc.track.duration)}"
         )
 
     @commands.command(name="volume", aliases=["vol", "v"])
@@ -211,6 +211,19 @@ class MusicCog(commands.Cog, MusicService):
         await vc.set_volume(vol)
 
         return await ctx.send(f"Set the volume to {vol}.")
+
+    @commands.command(name="seek")
+    @commands.check(voice_check)
+    async def seek_command(self, ctx: commands.Context, *, time: str):
+        """Seek to a specific time in the current song."""
+
+        vc: wavelink.Player = await get_player(ctx)
+
+        if not vc.track:
+            return await ctx.send("Nothing playing!")
+
+        message = await self.handle_seek(ctx, vc, time)
+        return await ctx.send(f"Seeked to {message}.")
 
     @commands.Cog.listener()
     async def on_voice_state_update(
