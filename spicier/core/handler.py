@@ -6,7 +6,7 @@ from discord import Message
 from discord.ext import commands
 from discord.ext.commands import errors as commands_errors
 
-from spicier.errors import QueueEmpty, VoiceConnectionError
+from spicier.errors import QueueEmpty, VoiceConnectionError, WrongArgument
 
 
 class EventHandler(commands.Cog):
@@ -52,9 +52,6 @@ class EventHandler(commands.Cog):
         elif isinstance(error, commands_errors.CheckFailure):
             pass
 
-        elif isinstance(error, commands_errors.BadArgument):
-            await self.send_error(ctx, f"Unvalid argument: `{error.message}`", error)
-
         elif isinstance(error, commands_errors.MissingRequiredArgument):
             await self.send_error(
                 ctx, f"Missing required argument: `{error.param.name}`", error
@@ -75,6 +72,9 @@ class EventHandler(commands.Cog):
 
         elif isinstance(error, QueueEmpty):
             await self.send_error(ctx, "The queue is empty", error)
+
+        elif isinstance(error, WrongArgument):
+            await self.send_error(ctx, f"Unvalid argument: `{error.message}`", error)
 
         else:
             logging.error(str(error))

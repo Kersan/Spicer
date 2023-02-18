@@ -8,7 +8,12 @@ from discord.ext.commands import Parameter
 from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
-from spicier.errors import QueueEmpty, SearchNotFound, VoiceConnectionError
+from spicier.errors import (
+    QueueEmpty,
+    SearchNotFound,
+    VoiceConnectionError,
+    WrongArgument,
+)
 
 
 async def user_connected(ctx: commands.Context) -> bool:
@@ -72,7 +77,7 @@ class MusicService:
         self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
         if channel and channel.guild != ctx.guild:
-            raise commands.BadArgument("Channel not found.")
+            raise WrongArgument(message="Channel not found.")
 
         try:
             vc: wavelink.Player = await get_player(channel or ctx)
@@ -129,7 +134,7 @@ class MusicService:
                 if result:
                     tracks.append(result)
             except Exception:
-                raise commands.BadArgument()
+                raise WrongArgument(message="Invalid search query.")
 
         if not tracks:
             raise SearchNotFound(track)
@@ -151,7 +156,7 @@ class MusicService:
         vc: wavelink.Player = ctx.voice_client
 
         if arg and arg.lower() not in clear:
-            raise commands.BadArgument("Invalid argument provided.")
+            raise WrongArgument(message="Invalid argument provided.")
 
         if arg and arg.lower() in clear:
             await clear(ctx)
@@ -175,7 +180,7 @@ class MusicService:
         arg_force = ["force", "f"]
 
         if arg and arg.lower() not in arg_all + arg_force:
-            raise commands.BadArgument("Invalid argument provided.")
+            raise WrongArgument(message="Invalid argument provided.")
 
         if arg and arg.lower() in arg_all:
             await skip_all(ctx)
@@ -214,18 +219,18 @@ class MusicService:
             return get_time(position)
 
         elif time.isdigit():
-            raise commands.BadArgument("Given time must be inside <0, song duration>.")
+            raise WrongArgument(message="Given time must be inside <0, song duration>.")
 
         if not (match := re.match(r"(\d{1,2}):(\d{2})", time)):
-            raise commands.BadArgument("Invalid time format. Use mm:ss.")
+            raise WrongArgument(message="Invalid time format. Use mm:ss. or seconds.")
 
         minutes, seconds = map(int, match.groups())
 
-        if minutes > vc.track.duration:
-            raise commands.BadArgument("Minutes must be less than the song duration.")
+        if minutes > vc.track.duration // 60:
+            raise WrongArgument(message="Minutes must be less than the song duration.")
 
         if seconds > 59:
-            raise commands.BadArgument("Seconds must be less than 60.")
+            raise WrongArgument(message="Seconds must be less than 60.")
 
         position = minutes * 60 + seconds
 
