@@ -2,10 +2,9 @@ import re
 from typing import Callable, Union
 
 import wavelink
-from discord import Guild, VoiceChannel
+from discord import VoiceChannel
 from discord.ext import commands
 from discord.ext.commands import Parameter
-from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
 from spicier.errors import (
@@ -15,64 +14,10 @@ from spicier.errors import (
     WrongArgument,
 )
 
-
-async def user_connected(ctx: commands.Context) -> bool:
-    """Check: User connected to voice channel"""
-    return bool(ctx.author.voice)
+from . import utils
 
 
-async def bot_connected(ctx: commands.Context) -> bool:
-    """Check: Bot connected to voice channel"""
-    return bool(ctx.voice_client)
-
-
-async def voice_check(ctx: commands.Context) -> bool:
-    """Check: User and bot connected to same voice channel"""
-    if not await user_connected(ctx):
-        return False
-    if not await bot_connected(ctx):
-        return False
-    if ctx.author.voice.channel == ctx.voice_client.channel:
-        return True
-    return False
-
-
-async def player_alive(player: wavelink.Player) -> bool:
-    return bool(not player.queue.is_empty or player.track)
-
-
-def get_time(seconds: Union[int, float]) -> str:
-    """Convert seconds to minutes and seconds."""
-    minutes, seconds = divmod(seconds, 60)
-    return f"{int(minutes)}:{int(seconds):02}"
-
-
-async def get_player(
-    case: Union[commands.Context, Guild, VoiceChannel]
-) -> wavelink.Player:
-    """Get the player for the guild."""
-    if isinstance(case, Guild):
-        return wavelink.NodePool.get_node().get_player(case)
-
-    if not case.voice_client and isinstance(case, VoiceChannel):
-        return await case.connect(cls=wavelink.Player)
-
-    return case.voice_client or await case.author.voice.channel.connect(
-        cls=wavelink.Player
-    )
-
-
-class MusicService:
-    def __init__(self, bot):
-        self.bot = bot
-
-    async def create_nodes(self, config):
-        try:
-            await self.bot.wait_until_ready()
-            await wavelink.NodePool.create_node(bot=self.bot, **config)
-        except NodeOccupied:
-            pass
-
+class MusicHandlers:
     async def handle_connect(
         self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
@@ -80,7 +25,7 @@ class MusicService:
             raise WrongArgument(message="Channel not found.")
 
         try:
-            vc: wavelink.Player = await get_player(channel or ctx)
+            vc: wavelink.Player = await utils.get_player(channel or ctx)
             await vc.connect(cls=wavelink.Player)
         except AttributeError:
             raise VoiceConnectionError()
@@ -89,7 +34,7 @@ class MusicService:
             return vc
 
     async def handle_disconnect(self, ctx: commands.Context):
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if vc.queue:
             vc.queue.clear()
@@ -104,12 +49,12 @@ class MusicService:
         resume: Callable,
     ):
 
-        if not await bot_connected(ctx) and not track:
+        if not await utils.bot_connected(ctx) and not track:
             await connect(ctx)
             return (None, None)
 
         tracks = []
-        vc = await get_player(ctx)
+        vc = await utils.get_player(ctx)
 
         if not track and vc.is_paused() and vc.track:
             return await resume(ctx)
@@ -174,7 +119,7 @@ class MusicService:
         skip_all: Callable,
         arg: str = None,
     ) -> wavelink.Player:
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         arg_all = ["all", "a"]
         arg_force = ["force", "f"]
@@ -194,7 +139,7 @@ class MusicService:
         return vc
 
     async def handle_skip_all(self, ctx: commands.Context) -> None:
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
             raise QueueEmpty("Queue is already empty.")
@@ -203,7 +148,7 @@ class MusicService:
         await vc.stop()
 
     async def handle_force_skip(self, ctx: commands.Context) -> wavelink.Player:
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
             raise QueueEmpty("Queue is already empty.")
@@ -216,7 +161,7 @@ class MusicService:
         if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
             position = int(time)
             await vc.seek(position * 1000)
-            return get_time(position)
+            return utils.get_time(position)
 
         elif time.isdigit():
             raise WrongArgument(message="Given time must be inside <0, song duration>.")
@@ -235,7 +180,7 @@ class MusicService:
         position = minutes * 60 + seconds
 
         await vc.seek(position * 1000)
-        return get_time(position)
+        return utils.get_time(position)
 
     async def handle_filter(self, vc: wavelink.Player, mode: str):
 
@@ -243,6 +188,3 @@ class MusicService:
             raise WrongArgument("Invalid filter mode.")
 
         await vc.set_filter(self.filters.modes[mode])
-
-    def is_alone(ctx: commands.Context) -> bool:
-        return len(ctx.voice_client.channel.members) == 1

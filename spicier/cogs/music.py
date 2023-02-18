@@ -9,15 +9,7 @@ from wavelink.abc import Playable
 
 from spicier.errors import WrongArgument
 
-from .service import (
-    CustomFilters,
-    MusicService,
-    bot_connected,
-    get_player,
-    get_time,
-    user_connected,
-    voice_check,
-)
+from .service import CustomFilters, MusicService, utils
 
 
 class MusicCog(commands.Cog, MusicService):
@@ -31,7 +23,7 @@ class MusicCog(commands.Cog, MusicService):
         bot.loop.create_task(self.create_nodes(self.config.lavalink))
 
     @commands.command(name="connect", aliases=["join"])
-    @commands.check(user_connected)
+    @commands.check(utils.user_connected)
     async def connect_command(
         self, ctx: commands.Context, *, channel: VoiceChannel = None
     ):
@@ -39,21 +31,21 @@ class MusicCog(commands.Cog, MusicService):
         if ctx.voice_client and not self.is_alone(ctx):
             return await ctx.send("I'm already in a voice channel.")
 
-        if await voice_check(ctx):
+        if await utils.voice_check(ctx):
             return await ctx.send("Jestem z tobą już wariacie 😎")
 
         vc: wavelink.Player = await self.handle_connect(ctx, channel=channel)
         return await ctx.send(f"Connected to {vc.channel}.")
 
     @commands.command(name="disconnect", aliases=["leave"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def disconnect_command(self, ctx: commands.Context):
         """Disconnect from a voice channel."""
         await self.handle_disconnect(ctx)
         return await ctx.send("Disconnected.")
 
     @commands.command()
-    @commands.check(user_connected)
+    @commands.check(utils.user_connected)
     async def play(
         self,
         ctx: commands.Context,
@@ -92,7 +84,7 @@ class MusicCog(commands.Cog, MusicService):
         )
 
     @commands.command(name="queue", aliases=["q"])
-    @commands.check(bot_connected)
+    @commands.check(utils.bot_connected)
     async def queue_command(self, ctx: commands.Context, arg: Optional[str]):
         """Show the current queue."""
 
@@ -110,17 +102,17 @@ class MusicCog(commands.Cog, MusicService):
         await ctx.send(f"Kolejka: ```{display}```")
 
     @commands.command(name="clear", aliases=["reset"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def clear_command(self, ctx: commands.Context):
         """Clear the current queue."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
         vc.queue.clear()
 
         await ctx.send("Cleared the queue!")
 
     @commands.command(name="skip", aliases=["s", "next"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def skip_command(self, ctx: commands.Context, arg: Optional[str]):
         """Skip the current song."""
 
@@ -132,7 +124,7 @@ class MusicCog(commands.Cog, MusicService):
             await vc.play(vc.queue.get())
 
     @commands.command(name="skip_all", aliases=["as"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def skip_all_command(self, ctx: commands.Context):
         """Skip all songs in the queue."""
 
@@ -140,7 +132,7 @@ class MusicCog(commands.Cog, MusicService):
         return await ctx.send("Skipped all songs!")
 
     @commands.command(name="force_skip", aliases=["fs"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def force_skip_command(self, ctx: commands.Context):
         """Force skip the current song."""
 
@@ -150,41 +142,41 @@ class MusicCog(commands.Cog, MusicService):
             vc.play(vc.queue.get())
 
     @commands.command(name="pause", aliases=["stop"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def pause_command(self, ctx: commands.Context):
         """Pause the current song."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
         await vc.pause()
 
     @commands.command(name="resume")
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def resume_command(self, ctx: commands.Context):
         """Resume the current song."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
         await vc.resume()
 
     @commands.command(name="now_playing", aliases=["np"])
-    @commands.check(bot_connected)
+    @commands.check(utils.bot_connected)
     async def now_playing_command(self, ctx: commands.Context):
         """Show the current song."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.track:
             return await ctx.send("Nothing playing!")
 
         return await ctx.send(
-            f"Now playing: {vc.track}\n{get_time(vc.position)} - {get_time(vc.track.duration)}"
+            f"Now playing: {vc.track}\n{utils.get_time(vc.position)} - {utils.get_time(vc.track.duration)}"
         )
 
     @commands.command(name="volume", aliases=["vol", "v"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def volume_command(self, ctx: commands.Context, *, vol: int = None):
         """Change the player volume."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vol:
             return await ctx.send(f"Current volume: {vc.volume}")
@@ -197,11 +189,11 @@ class MusicCog(commands.Cog, MusicService):
         return await ctx.send(f"Set the volume to {vol}.")
 
     @commands.command(name="seek")
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def seek_command(self, ctx: commands.Context, *, time: str):
         """Seek to a specific time in the current song."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.track:
             return await ctx.send("Nothing playing!")
@@ -224,12 +216,12 @@ class MusicCog(commands.Cog, MusicService):
         )
 
     @filter_group.command(name="set")
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def filter_set_command(
         self, ctx: commands.Context, *, mode: Literal["boost", "piano", "metal", "flat"]
     ):
         """Set the filter mode."""
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.track:
             return await ctx.send("Nothing playing!")
@@ -239,11 +231,11 @@ class MusicCog(commands.Cog, MusicService):
         return await ctx.send("Set the filter mode to {mode}.")
 
     @filter_group.command(name="reset", aliases=["clear"])
-    @commands.check(voice_check)
+    @commands.check(utils.voice_check)
     async def filter_reset_command(self, ctx: commands.Context):
         """Reset the filter mode."""
 
-        vc: wavelink.Player = await get_player(ctx)
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.track:
             return await ctx.send("Nothing playing!")
@@ -275,7 +267,7 @@ class MusicCog(commands.Cog, MusicService):
         self, member, before: VoiceState, after: VoiceState
     ):
         if member.id == self.bot.user.id and after.channel is None:
-            player = await get_player(before.channel.guild)
+            player = await utils.get_player(before.channel.guild)
             if player is not None:
                 await player.disconnect()
 
@@ -284,7 +276,7 @@ class MusicCog(commands.Cog, MusicService):
             and self.bot.user in before.channel.members
             and len(before.channel.members) <= 2
         ):
-            player = await get_player(before.channel.guild)
+            player = await utils.get_player(before.channel.guild)
             await self.dead(player, before)
 
     @tasks.loop(count=1)
