@@ -3,10 +3,11 @@ from typing import Callable, Union
 import wavelink
 from discord import Guild, VoiceChannel
 from discord.ext import commands
+from discord.ext.commands import Parameter
 from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
-from spicier.errors import QueueEmpty, SearchNotFound
+from spicier.errors import QueueEmpty, SearchNotFound, VoiceConnectionError
 
 
 async def user_connected(ctx: commands.Context) -> bool:
@@ -70,10 +71,7 @@ class MusicService:
             vc: wavelink.Player = await get_player(channel or ctx)
             await vc.connect(cls=wavelink.Player)
         except AttributeError:
-            await ctx.send(
-                "No voice channel to connect to. Please either provide one or join one."
-            )
-            raise commands.ChannelNotFound
+            raise VoiceConnectionError()
 
         finally:
             return vc
@@ -95,18 +93,19 @@ class MusicService:
     ):
 
         if not await bot_connected(ctx) and not track:
-            connect(ctx, channel=ctx.author.voice.channel)
-            return
+            await connect(ctx)
+            return (None, None)
 
         tracks = []
         vc = await get_player(ctx)
 
-        if not track and vc.is_paused and vc.track:
-            await vc.resume()
+        if not track and vc.is_paused() and vc.track:
             return await resume(ctx)
 
-        elif not track:
-            raise commands.BadArgument("No track provided.")
+        if not track and not vc.is_paused():
+            raise commands.MissingRequiredArgument(
+                Parameter("Track", Parameter.POSITIONAL_OR_KEYWORD)
+            )
 
         if isinstance(track, wavelink.YouTubeTrack):
             tracks.append(track)
@@ -123,7 +122,7 @@ class MusicService:
                 if result:
                     tracks.append(result)
             except Exception:
-                raise commands.BadArgument(f"Could not find any results for {track}.")
+                raise commands.BadArgument()
 
         if not tracks:
             raise SearchNotFound(track)

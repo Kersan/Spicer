@@ -7,3 +7,7 @@ class SearchNotFound(ObjectNotFound):
 
 class QueueEmpty(CommandError):
     pass
+
+
+class VoiceConnectionError(CommandError):
+    pass

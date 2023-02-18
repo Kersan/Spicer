@@ -1,56 +1,21 @@
 import logging
 import traceback
+from typing import Union
 
 from discord import Message
 from discord.ext import commands
 from discord.ext.commands import errors as commands_errors
 
+from spicier.errors import QueueEmpty, VoiceConnectionError
+
 
 class EventHandler(commands.Cog):
-    """Handles bot errors"""
+    """Handles bot events"""
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.config = bot.config
-
-    @commands.Cog.listener()
-    async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
-    ) -> None:
-        if isinstance(error, commands_errors.MissingPermissions):
-            return
-
-        if self.config.delete_after:
-            await ctx.message.delete(delay=self.config.delete_time)
-
-        if isinstance(error, commands_errors.MissingRequiredArgument):
-            await ctx.reply(
-                f"Missing required argument: `{error.param}`",
-                delete_after=self.config.delete_time,
-            )
-            logging.debug(str(error))
-            return
-
-        if isinstance(error, commands_errors.CommandNotFound):
-            await ctx.reply(
-                f"Command not found: `{ctx.message.content}`",
-                delete_after=self.config.delete_time,
-            )
-            logging.debug(str(error))
-            return
-
-        if isinstance(error, commands_errors.CheckFailure):
-            return
-
-        if ctx.message.author.guild_permissions.administrator:
-            await ctx.reply(
-                f"Coś poszło nie tak: ```{error}```",
-                delete_after=self.config.delete_time,
-            )
-
-        logging.error(str(error))
-
-        # raise error
+        self.delete = bot.config.delete_after
+        self.delete_time = bot.config.delete_time
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: Message, after: Message):
@@ -59,5 +24,65 @@ class EventHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
-        if self.config.delete_after:
-            await ctx.message.delete(delay=self.config.delete_time)
+        if self.delete:
+            await ctx.message.delete(delay=self.delete_time)
+
+    @commands.Cog.listener()
+    async def on_command_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ) -> None:
+        if self.delete:
+            await ctx.message.delete(delay=self.delete_time)
+
+        handle: bool = (
+            await self.handle_error(ctx, error)
+            and ctx.message.author.guild_permissions.administrator
+        )
+
+        if handle:
+            raise error
+
+    async def handle_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ) -> Union[bool, None]:
+        """Handle errors and return True if error should be raised"""
+        if isinstance(error, commands_errors.MissingPermissions):
+            pass
+
+        elif isinstance(error, commands_errors.CheckFailure):
+            pass
+
+        elif isinstance(error, commands_errors.BadArgument):
+            await self.send_error(
+                ctx, f"Something went wrong with the argument: `{error}`", error
+            )
+
+        elif isinstance(error, commands_errors.MissingRequiredArgument):
+            await self.send_error(
+                ctx, f"Missing required argument: `{error.param.name}`", error
+            )
+
+        elif isinstance(error, commands_errors.CommandNotFound):
+            await self.send_error(
+                ctx, f"Command not found: `{ctx.message.content}`", error
+            )
+
+        elif isinstance(error, commands_errors.ChannelNotFound):
+            await self.send_error(ctx, f"Channel not found: `{error.argument}`", error)
+
+        elif isinstance(error, VoiceConnectionError):
+            await self.send_error(
+                ctx, "Something went wrong with the voice connection", error
+            )
+
+        elif isinstance(error, QueueEmpty):
+            await self.send_error(ctx, "The queue is empty", error)
+
+        else:
+            logging.error(str(error))
+            return True
+
+    async def send_error(self, ctx: commands.Context, message: str, error):
+        """Reply with error message and log error"""
+        await ctx.reply(message, delete_after=self.delete_time)
+        logging.debug(str(error))

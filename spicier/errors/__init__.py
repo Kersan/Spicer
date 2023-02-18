@@ -1,1 +1,1 @@
-from .music import SearchNotFound, QueueEmpty
+from .music import QueueEmpty, SearchNotFound, VoiceConnectionError

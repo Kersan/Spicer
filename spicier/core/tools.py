@@ -8,6 +8,7 @@ from discord.ext import commands
 
 
 async def load_cogs(bot: commands.Bot, cogs_dir: str = "spicier/cogs") -> None:
+    """Load all cogs from the given directory"""
     for filename in os.listdir(cogs_dir):
         if filename.endswith(".py"):
             await bot.load_extension(f"spicier.cogs.{filename[:-3]}")
@@ -15,6 +16,7 @@ async def load_cogs(bot: commands.Bot, cogs_dir: str = "spicier/cogs") -> None:
 
 
 def set_intents(intents: Intents = Intents.default()) -> Intents:
+    """Setup intents for the bot"""
     intents.message_content = True
     intents.members = True
     intents.guilds = True
