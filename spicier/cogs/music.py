@@ -28,22 +28,43 @@ class MusicCog(commands.Cog, MusicService):
         self, ctx: commands.Context, *, channel: VoiceChannel = None
     ):
         """Connect to a voice channel."""
-        if ctx.voice_client and not self.is_alone(ctx):
-            return await ctx.send("I'm already in a voice channel.")
-
         if await utils.voice_check(ctx):
-            return await ctx.send("Jestem z tobą już wariacie 😎")
+            return await ctx.reply(
+                embed=MusicEmbed.success(title="**Jestem już z tobą wariacie 😎**"),
+                mention_author=False,
+            )
+
+        if ctx.voice_client and not self.is_alone(ctx):
+            return await ctx.reply(
+                embed=MusicEmbed.success(
+                    title="**I'm already in a voice channel.**",
+                    description=f"👉 {ctx.voice_client.channel}",
+                ),
+                mention_author=False,
+            )
 
         vc: wavelink.Player = await self.handle_connect(ctx, channel=channel)
-        return await ctx.send(f"Connected to {vc.channel}.")
+        return await ctx.reply(
+            embed=MusicEmbed.success(
+                action="Joined the voice channel",
+                author=ctx.author,
+                title=f"🔊 **Connected to {vc.channel}**",
+            ),
+            mention_author=False,
+        )
 
     @commands.command(name="disconnect", aliases=["leave"])
     @commands.check(utils.voice_check)
     async def disconnect_command(self, ctx: commands.Context):
         """Disconnect from a voice channel."""
-        await self.handle_disconnect(ctx)
+        channel = await self.handle_disconnect(ctx)
         return await ctx.reply(
-            embed=MusicEmbed.success(ctx.author, "🙋**�*�👋 Disconne**cted.")
+            embed=MusicEmbed.success(
+                action="Left the voice channel",
+                author=ctx.author,
+                title=f"**Disconnected from {channel}**",
+            ),
+            mention_author=False,
         )
 
     @commands.command()
@@ -66,23 +87,33 @@ class MusicCog(commands.Cog, MusicService):
         if not vc or not tracks:
             return
 
-        final = tracks[0]
+        final: wavelink.Track = tracks[0]
 
         if not vc.track:
             now = vc.queue.get()
             await vc.play(now)
 
-            # TODO: Handle this message better 😪
-            return await ctx.send(
-                f"Added to queue {len(tracks)} songs. \nNow playing: {final.title}"
-                if len(tracks) > 1
-                else f"Now playing: {final.title}"
+        return (
+            await ctx.reply(
+                embed=MusicEmbed.success(
+                    author=ctx.author,
+                    action="Play song",
+                    title=f"<:Reply:1076905179619807242>`{final.title}`",
+                    url=final.uri,
+                    description=f"**Added by**: {ctx.author.mention} | **Duration**: `{utils.get_time(final.length)}` | **Position**: `{len(vc.queue)}`",
+                ),
+                mention_author=False,
             )
-
-        await ctx.send(
-            f"Added to queue {len(tracks)} songs."
-            if len(tracks) > 1
-            else f"Added {final.title} to queue."
+            if len(tracks) < 2
+            else await ctx.reply(
+                embed=MusicEmbed.success(
+                    ctx.author,
+                    action=f"Play list of songs",
+                    title=f"<:Reply:1076905179619807242>`Added {len(tracks)} songs to queue`",
+                    url=final.uri,
+                    description=f"**Added by**: {ctx.author.mention} | **Duration**: `{utils.get_lenght(tracks)}` | **Queue lenght**: `{len(vc.queue)}`",
+                ),
+            )
         )
 
     @commands.command(name="queue", aliases=["q"])

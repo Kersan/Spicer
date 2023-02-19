@@ -29,8 +29,7 @@ class EventHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
-        if self.delete:
-            await ctx.message.delete(delay=self.delete_time)
+        ...
 
     @commands.Cog.listener()
     async def on_command_error(

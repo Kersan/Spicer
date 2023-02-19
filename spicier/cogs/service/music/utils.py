@@ -42,9 +42,13 @@ async def player_alive(player: wavelink.Player) -> bool:
 
 
 def get_time(seconds: Union[int, float]) -> str:
-    """Convert seconds to minutes and seconds."""
+    """Convert seconds to hours, minutes and seconds."""
     minutes, seconds = divmod(seconds, 60)
-    return f"{int(minutes)}:{int(seconds):02}"
+    hours, minutes = divmod(minutes, 60)
+
+    if hours:
+        return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+    return f"{int(minutes):02d}:{int(seconds):02d}"
 
 
 async def get_player(
@@ -60,3 +64,8 @@ async def get_player(
     return case.voice_client or await case.author.voice.channel.connect(
         cls=wavelink.Player
     )
+
+
+def get_lenght(tracks: list[wavelink.Track]) -> str:
+    """Get the total length of the queue."""
+    return get_time(sum(track.length for track in tracks))

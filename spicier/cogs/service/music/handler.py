@@ -36,13 +36,16 @@ class MusicHandlers:
         finally:
             return vc
 
-    async def handle_disconnect(self, ctx: commands.Context):
+    async def handle_disconnect(self, ctx: commands.Context) -> str:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if vc.queue:
             vc.queue.clear()
 
+        channel_name = vc.channel.name
+
         await ctx.voice_client.disconnect()
+        return channel_name
 
     async def handle_play(
         self,
