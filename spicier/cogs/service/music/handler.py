@@ -98,7 +98,7 @@ class MusicHandlers:
     async def handle_queue(
         self,
         ctx: commands.Context,
-    ) -> tuple(wavelink.Track, WaitQueue):
+    ) -> tuple[wavelink.Track, WaitQueue]:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         return vc.track, vc.queue
@@ -125,14 +125,16 @@ class MusicHandlers:
             return await force_skip(ctx)
 
         track = vc.track
+        next = None
 
         if not vc.queue:
             await vc.stop()
 
         else:
-            await vc.play(vc.queue.get())
+            next = vc.queue.get()
+            await vc.play(next)
 
-        return track
+        return track, next
 
     async def handle_skip_all(self, ctx: commands.Context) -> None:
         vc: wavelink.Player = await utils.get_player(ctx)

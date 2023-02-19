@@ -81,9 +81,6 @@ class MusicCog(commands.Cog, MusicService):
     async def queue_group(self, ctx: commands.Context, arg: Optional[int] = 0):
         """Show the current queue."""
 
-        if isinstance(arg, str):
-            return
-
         current, queue = await self.handle_queue(ctx)
 
         if not queue or not current:
@@ -115,9 +112,12 @@ class MusicCog(commands.Cog, MusicService):
     async def skip_command(self, ctx: commands.Context, arg: Optional[str]):
         """Skip the current song."""
 
-        prev_track: wavelink.Track = await self.handle_skip(
+        prev_track, next_track = await self.handle_skip(
             ctx, self.force_skip_command, self.skip_all_command, arg
         )
+
+        if next_track:
+            return await self.message_skipped_next(ctx, prev_track, next_track)
 
         return await self.message_skipped(ctx, prev_track)
 

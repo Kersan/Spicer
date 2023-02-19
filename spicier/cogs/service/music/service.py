@@ -63,7 +63,7 @@ class MusicService(MusicHandlers):
         )
         await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_play_signle(
+    async def message_play_single(
         self, ctx: commands.Context, vc: wavelink.Player, track: wavelink.Track
     ):
         embed = MusicEmbed.success(
@@ -146,16 +146,17 @@ class MusicService(MusicHandlers):
 
         await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_skipped(
-        self, ctx: commands.Context, prev: wavelink.Track, next: wavelink.Track
-    ):
+    async def message_skipped(self, ctx: commands.Context, track: wavelink.Track):
         embed = MusicEmbed.success(
             ctx.author,
             "Skipped current song",
-            title=f"**Skip**: `{prev.title}`"
-            if not next
-            else f"**Now playing**: `{next.title}`",
-            url=prev.uri if not next else next.uri,
+            title=f"<:Reply:1076905179619807242> `{track.title}`",
+            url=track.uri,
         )
 
         await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_skipped_next(
+        self, ctx: commands.Context, prev: wavelink.Track, next: wavelink.Track
+    ):
+        ...
