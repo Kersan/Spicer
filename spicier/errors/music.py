@@ -11,3 +11,7 @@ class QueueEmpty(CommandError):
 
 class VoiceConnectionError(CommandError):
     pass
+
+
+class PlayerNotPlaying(CommandError):
+    pass

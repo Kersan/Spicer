@@ -7,8 +7,6 @@ from discord import VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.abc import Playable
 
-from spicier.errors import WrongArgument
-
 from .service import CustomFilters, MusicService, utils
 
 
@@ -18,7 +16,7 @@ class MusicCog(commands.Cog, MusicService):
         self.bot = bot
         self.filters = CustomFilters()
 
-        super().__init__(bot)
+        super().__init__(bot, self.filters)
 
         bot.loop.create_task(self.create_nodes(self.config.lavalink))
 
@@ -84,12 +82,9 @@ class MusicCog(commands.Cog, MusicService):
         )
 
     @commands.command(name="queue", aliases=["q"])
-    @commands.check(utils.bot_connected)
+    @commands.check(utils.player_check)
     async def queue_command(self, ctx: commands.Context, arg: Optional[str]):
         """Show the current queue."""
-
-        if not ctx.voice_client:
-            return await ctx.send("Not playing rn!")
 
         queue = await self.handle_queue(
             ctx, clear=self.clear_command, now_playing=self.now_playing_command, arg=arg
@@ -99,7 +94,7 @@ class MusicCog(commands.Cog, MusicService):
             return await ctx.send("No songs queued.")
 
         display = "\n".join(f"{i} - {t.title}" for i, t in enumerate(queue, start=1))
-        await ctx.send(f"Kolejka: ```{display}```")
+        return await ctx.send(f"Kolejka: ```{display}```")
 
     @commands.command(name="clear", aliases=["reset"])
     @commands.check(utils.voice_check)
@@ -109,19 +104,18 @@ class MusicCog(commands.Cog, MusicService):
         vc: wavelink.Player = await utils.get_player(ctx)
         vc.queue.clear()
 
-        await ctx.send("Cleared the queue!")
+        return await ctx.send("Cleared the queue!")
 
     @commands.command(name="skip", aliases=["s", "next"])
-    @commands.check(utils.voice_check)
+    @commands.check(utils.player_check)
     async def skip_command(self, ctx: commands.Context, arg: Optional[str]):
         """Skip the current song."""
 
-        vc: wavelink.Player = await self.handle_skip(
+        prev_track: wavelink.Track = await self.handle_skip(
             ctx, self.force_skip_command, self.skip_all_command, arg
         )
 
-        if vc.queue:
-            await vc.play(vc.queue.get())
+        return await ctx.send(f"Skipped {prev_track.title}!")
 
     @commands.command(name="skip_all", aliases=["as"])
     @commands.check(utils.voice_check)
@@ -136,10 +130,8 @@ class MusicCog(commands.Cog, MusicService):
     async def force_skip_command(self, ctx: commands.Context):
         """Force skip the current song."""
 
-        vc: wavelink.Player = await self.handle_force_skip(ctx)
-
-        if vc.queue and not vc.track:
-            vc.play(vc.queue.get())
+        prev_track = await self.handle_force_skip(ctx)
+        return await ctx.send(f"Skipped {prev_track.title}!")
 
     @commands.command(name="pause", aliases=["stop"])
     @commands.check(utils.voice_check)
@@ -148,6 +140,7 @@ class MusicCog(commands.Cog, MusicService):
 
         vc: wavelink.Player = await utils.get_player(ctx)
         await vc.pause()
+        return await ctx.message.add_reaction("⏸")
 
     @commands.command(name="resume")
     @commands.check(utils.voice_check)
@@ -156,16 +149,14 @@ class MusicCog(commands.Cog, MusicService):
 
         vc: wavelink.Player = await utils.get_player(ctx)
         await vc.resume()
+        return await ctx.message.add_reaction("▶")
 
     @commands.command(name="now_playing", aliases=["np"])
-    @commands.check(utils.bot_connected)
+    @commands.check(utils.player_check)
     async def now_playing_command(self, ctx: commands.Context):
         """Show the current song."""
 
         vc: wavelink.Player = await utils.get_player(ctx)
-
-        if not vc.track:
-            return await ctx.send("Nothing playing!")
 
         return await ctx.send(
             f"Now playing: {vc.track}\n{utils.get_time(vc.position)} - {utils.get_time(vc.track.duration)}"
@@ -189,16 +180,13 @@ class MusicCog(commands.Cog, MusicService):
         return await ctx.send(f"Set the volume to {vol}.")
 
     @commands.command(name="seek")
-    @commands.check(utils.voice_check)
+    @commands.check(utils.player_check)
     async def seek_command(self, ctx: commands.Context, *, time: str):
         """Seek to a specific time in the current song."""
 
         vc: wavelink.Player = await utils.get_player(ctx)
 
-        if not vc.track:
-            return await ctx.send("Nothing playing!")
-
-        message = await self.handle_seek(ctx, vc, time)
+        message = await self.handle_seek(vc, time)
         return await ctx.send(f"Seeked to {message}.")
 
     @commands.group(name="filter")
@@ -216,31 +204,37 @@ class MusicCog(commands.Cog, MusicService):
         )
 
     @filter_group.command(name="set")
-    @commands.check(utils.voice_check)
+    @commands.check(utils.player_check)
     async def filter_set_command(
-        self, ctx: commands.Context, *, mode: Literal["boost", "piano", "metal", "flat"]
+        self,
+        ctx: commands.Context,
+        *,
+        mode: Literal["boost", "piano", "metal", "flat", "spin"],
     ):
         """Set the filter mode."""
         vc: wavelink.Player = await utils.get_player(ctx)
 
-        if not vc.track:
-            return await ctx.send("Nothing playing!")
+        await self.handle_filter(vc, mode)
 
-        await self.handle_finter(ctx, mode)
-
-        return await ctx.send("Set the filter mode to {mode}.")
+        return await ctx.send(f"Set the filter mode to {mode}.")
 
     @filter_group.command(name="reset", aliases=["clear"])
-    @commands.check(utils.voice_check)
+    @commands.check(utils.player_check)
     async def filter_reset_command(self, ctx: commands.Context):
         """Reset the filter mode."""
 
         vc: wavelink.Player = await utils.get_player(ctx)
 
-        if not vc.track:
-            return await ctx.send("Nothing playing!")
-
         await vc.set_filter(self.filters.clear, seek=True)
+
+    @filter_group.command(name="current", aliases=["show"])
+    @commands.check(utils.player_check)
+    async def filter_current_command(self, ctx: commands.Context):
+        """Show the current filter mode."""
+
+        vc: wavelink.Player = await utils.get_player(ctx)
+
+        return await ctx.send(f"Current filter mode: {vc.filter}")
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):

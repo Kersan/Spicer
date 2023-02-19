@@ -20,7 +20,7 @@ class CustomFilters:
             "boost": Filter(equalizer=Equalizer.boost()),
             "flat": Filter(equalizer=Equalizer.flat()),
             "metal": Filter(equalizer=Equalizer.metal()),
-            "piano": Filter(equalizer=Equalizer.piano()),
+            "spin": Filter(rotation=Rotation(0.6)),
         }
 
     @property
@@ -29,14 +29,4 @@ class CustomFilters:
 
     @property
     def clear(self) -> Filter:
-        return Filter(
-            equalizer=Equalizer(),
-            karaoke=Karaoke(),
-            timescale=Timescale(),
-            tremolo=Tremolo(),
-            vibrato=Vibrato(),
-            rotation=Rotation(),
-            distortion=Distortion(),
-            lowpass=LowPass(),
-            channelmix=ChannelMix(),
-        )
+        return Filter(equalizer=Equalizer.flat())

@@ -4,7 +4,7 @@ import wavelink
 from discord import Guild, VoiceChannel
 from discord.ext import commands
 
-from .filters import CustomFilters
+from spicier.errors import PlayerNotPlaying
 
 
 async def user_connected(ctx: commands.Context) -> bool:
@@ -26,6 +26,15 @@ async def voice_check(ctx: commands.Context) -> bool:
     if ctx.author.voice.channel == ctx.voice_client.channel:
         return True
     return False
+
+
+async def player_check(ctx: commands.Context) -> bool:
+    """Check: Player is playing"""
+    if not await bot_connected(ctx):
+        return False
+    if not ctx.voice_client.is_playing():
+        raise PlayerNotPlaying
+    return True
 
 
 async def player_alive(player: wavelink.Player) -> bool:
@@ -51,4 +60,3 @@ async def get_player(
     return case.voice_client or await case.author.voice.channel.connect(
         cls=wavelink.Player
     )
-

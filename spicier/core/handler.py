@@ -6,7 +6,12 @@ from discord import Message
 from discord.ext import commands
 from discord.ext.commands import errors as commands_errors
 
-from spicier.errors import QueueEmpty, VoiceConnectionError, WrongArgument
+from spicier.errors import (
+    PlayerNotPlaying,
+    QueueEmpty,
+    VoiceConnectionError,
+    WrongArgument,
+)
 
 
 class EventHandler(commands.Cog):
@@ -71,16 +76,30 @@ class EventHandler(commands.Cog):
             )
 
         elif isinstance(error, QueueEmpty):
-            await self.send_error(ctx, "The queue is empty", error)
+            await self.send_error(ctx, "The queue is empty", error, debug=False)
 
         elif isinstance(error, WrongArgument):
-            await self.send_error(ctx, f"Unvalid argument: `{error.message}`", error)
+            await self.send_error(
+                ctx, f"Unvalid argument: `{error.message}`", error, debug=False
+            )
+
+        elif isinstance(error, PlayerNotPlaying):
+            await self.send_error(
+                ctx, "Before using this command, play something", error, debug=False
+            )
 
         else:
             logging.error(str(error))
             return True
 
-    async def send_error(self, ctx: commands.Context, message: str, error):
+    async def send_error(
+        self,
+        ctx: commands.Context,
+        message: str,
+        error: commands.CommandError,
+        debug=True,
+    ):
         """Reply with error message and log error"""
         await ctx.reply(message, delete_after=self.delete_time)
-        logging.debug(str(error))
+        if debug:
+            logging.debug(str(error))

@@ -6,8 +6,11 @@ from .handler import MusicHandlers
 
 
 class MusicService(MusicHandlers):
-    def __init__(self, bot):
+    def __init__(self, bot, filters):
         self.bot = bot
+        self.filters = filters
+
+        super().__init__(filters)
 
     async def create_nodes(self, config):
         try:
@@ -16,5 +19,5 @@ class MusicService(MusicHandlers):
         except NodeOccupied:
             pass
 
-    def is_alone(ctx: commands.Context) -> bool:
+    def is_alone(self, ctx: commands.Context) -> bool:
         return len(ctx.voice_client.channel.members) == 1

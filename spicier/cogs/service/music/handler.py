@@ -14,12 +14,15 @@ from spicier.errors import (
     WrongArgument,
 )
 
-from . import utils
+from . import CustomFilters, utils
 
 
 class MusicHandlers:
+    def __init__(self, filters: CustomFilters):
+        self.filters = filters
+
     async def handle_connect(
-        self, ctx: commands.Context, channel: VoiceChannel = None
+        ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
         if channel and channel.guild != ctx.guild:
             raise WrongArgument(message="Channel not found.")
@@ -118,7 +121,7 @@ class MusicHandlers:
         force_skip: Callable,
         skip_all: Callable,
         arg: str = None,
-    ) -> wavelink.Player:
+    ) -> wavelink.Track:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         arg_all = ["all", "a"]
@@ -128,15 +131,20 @@ class MusicHandlers:
             raise WrongArgument(message="Invalid argument provided.")
 
         if arg and arg.lower() in arg_all:
-            await skip_all(ctx)
+            return await skip_all(ctx)
 
         if arg and arg.lower() in arg_force:
-            await force_skip(ctx)
+            return await force_skip(ctx)
+
+        track = vc.track
 
         if not vc.queue:
             await vc.stop()
 
-        return vc
+        else:
+            await vc.play(vc.queue.get())
+
+        return track
 
     async def handle_skip_all(self, ctx: commands.Context) -> None:
         vc: wavelink.Player = await utils.get_player(ctx)
@@ -147,17 +155,21 @@ class MusicHandlers:
         vc.queue.clear()
         await vc.stop()
 
-    async def handle_force_skip(self, ctx: commands.Context) -> wavelink.Player:
+    async def handle_force_skip(self, ctx: commands.Context) -> wavelink.Track:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
             raise QueueEmpty("Queue is already empty.")
 
+        track = vc.track
         await vc.stop()
 
-    async def handle_seek(
-        self, ctx: commands.Context, vc: wavelink.Player, time: str
-    ) -> str:
+        if vc.queue and not vc.track:
+            vc.play(vc.queue.get())
+
+        return track
+
+    async def handle_seek(self, vc: wavelink.Player, time: str) -> str:
         if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
             position = int(time)
             await vc.seek(position * 1000)
