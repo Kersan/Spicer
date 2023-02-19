@@ -22,7 +22,7 @@ class MusicHandlers:
         self.filters = filters
 
     async def handle_connect(
-        ctx: commands.Context, channel: VoiceChannel = None
+        self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
         if channel and channel.guild != ctx.guild:
             raise WrongArgument(message="Channel not found.")
