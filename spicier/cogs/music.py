@@ -7,6 +7,8 @@ from discord import VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.abc import Playable
 
+from spicier.cogs.embeds import MusicEmbed
+
 from .service import CustomFilters, MusicService, utils
 
 
@@ -40,7 +42,9 @@ class MusicCog(commands.Cog, MusicService):
     async def disconnect_command(self, ctx: commands.Context):
         """Disconnect from a voice channel."""
         await self.handle_disconnect(ctx)
-        return await ctx.send("Disconnected.")
+        return await ctx.reply(
+            embed=MusicEmbed.success(ctx.author, "🙋**�*�👋 Disconne**cted.")
+        )
 
     @commands.command()
     @commands.check(utils.user_connected)
