@@ -29,43 +29,20 @@ class MusicCog(commands.Cog, MusicService):
     ):
         """Connect to a voice channel."""
         if await utils.voice_check(ctx):
-            return await ctx.reply(
-                embed=MusicEmbed.success(title="**Jestem już z tobą wariacie 😎**"),
-                mention_author=False,
-            )
+            return await self.message_already_with(ctx)
 
         if ctx.voice_client and not self.is_alone(ctx):
-            return await ctx.reply(
-                embed=MusicEmbed.success(
-                    title="**I'm already in a voice channel.**",
-                    description=f"👉 {ctx.voice_client.channel}",
-                ),
-                mention_author=False,
-            )
+            return self.message_already_connected(ctx)
 
         vc: wavelink.Player = await self.handle_connect(ctx, channel=channel)
-        return await ctx.reply(
-            embed=MusicEmbed.success(
-                action="Joined the voice channel",
-                author=ctx.author,
-                title=f"🔊 **Connected to {vc.channel}**",
-            ),
-            mention_author=False,
-        )
+        return await self.message_connected(ctx, vc)
 
     @commands.command(name="disconnect", aliases=["leave"])
     @commands.check(utils.voice_check)
     async def disconnect_command(self, ctx: commands.Context):
         """Disconnect from a voice channel."""
         channel = await self.handle_disconnect(ctx)
-        return await ctx.reply(
-            embed=MusicEmbed.success(
-                action="Left the voice channel",
-                author=ctx.author,
-                title=f"**Disconnected from {channel}**",
-            ),
-            mention_author=False,
-        )
+        return self.message_disconnected(ctx, channel)
 
     @commands.command()
     @commands.check(utils.user_connected)
@@ -94,42 +71,34 @@ class MusicCog(commands.Cog, MusicService):
             await vc.play(now)
 
         return (
-            await ctx.reply(
-                embed=MusicEmbed.success(
-                    author=ctx.author,
-                    action="Play song",
-                    title=f"<:Reply:1076905179619807242>`{final.title}`",
-                    url=final.uri,
-                    description=f"**Added by**: {ctx.author.mention} | **Duration**: `{utils.get_time(final.length)}` | **Position**: `{len(vc.queue)}`",
-                ),
-                mention_author=False,
-            )
+            await self.message_play_single(ctx, vc, final)
             if len(tracks) < 2
-            else await ctx.reply(
-                embed=MusicEmbed.success(
-                    ctx.author,
-                    action=f"Play list of songs",
-                    title=f"<:Reply:1076905179619807242>`Added {len(tracks)} songs to queue`",
-                    url=final.uri,
-                    description=f"**Added by**: {ctx.author.mention} | **Duration**: `{utils.get_lenght(tracks)}` | **Queue lenght**: `{len(vc.queue)}`",
-                ),
-            )
+            else await self.message_play_multiple(ctx, vc, tracks)
         )
 
-    @commands.command(name="queue", aliases=["q"])
+    @commands.group(name="queue", aliases=["q"])
     @commands.check(utils.player_check)
-    async def queue_command(self, ctx: commands.Context, arg: Optional[str]):
+    async def queue_group(self, ctx: commands.Context, arg: Optional[int] = 0):
         """Show the current queue."""
 
-        queue = await self.handle_queue(
-            ctx, clear=self.clear_command, now_playing=self.now_playing_command, arg=arg
-        )
+        if isinstance(arg, str):
+            return
 
-        if not queue:
-            return await ctx.send("No songs queued.")
+        current, queue = await self.handle_queue(ctx)
 
-        display = "\n".join(f"{i} - {t.title}" for i, t in enumerate(queue, start=1))
-        return await ctx.send(f"Kolejka: ```{display}```")
+        if not queue or not current:
+            return await self.message_queue_is_empty(ctx)
+
+        if arg > len(queue):
+            arg = max([0, len(queue) - 10])
+
+        return await self.message_queue(ctx, current, queue, arg)
+
+    @queue_group.command(name="clear", aliases=["reset"])
+    async def queue_clear_command(self, ctx: commands.Context):
+        """Clear the current queue."""
+
+        return await self.clear_command(ctx)
 
     @commands.command(name="clear", aliases=["reset"])
     @commands.check(utils.voice_check)
@@ -139,7 +108,7 @@ class MusicCog(commands.Cog, MusicService):
         vc: wavelink.Player = await utils.get_player(ctx)
         vc.queue.clear()
 
-        return await ctx.send("Cleared the queue!")
+        return await self.message_queue_cleared(ctx)
 
     @commands.command(name="skip", aliases=["s", "next"])
     @commands.check(utils.player_check)
@@ -150,7 +119,7 @@ class MusicCog(commands.Cog, MusicService):
             ctx, self.force_skip_command, self.skip_all_command, arg
         )
 
-        return await ctx.send(f"Skipped {prev_track.title}!")
+        return await self.message_skipped(ctx, prev_track)
 
     @commands.command(name="skip_all", aliases=["as"])
     @commands.check(utils.voice_check)
@@ -244,7 +213,9 @@ class MusicCog(commands.Cog, MusicService):
         self,
         ctx: commands.Context,
         *,
-        mode: Literal["boost", "piano", "metal", "flat", "spin"],
+        mode: Literal[
+            "boost", "piano", "metal", "flat", "spin", "nightcore", "destroy"
+        ],
     ):
         """Set the filter mode."""
         vc: wavelink.Player = await utils.get_player(ctx)

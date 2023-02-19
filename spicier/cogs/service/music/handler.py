@@ -98,25 +98,10 @@ class MusicHandlers:
     async def handle_queue(
         self,
         ctx: commands.Context,
-        clear: Callable,
-        now_playing: Callable,
-        arg: str = None,
-    ) -> WaitQueue:
-        clear = ["clear", "c", "reset", "r"]
+    ) -> tuple(wavelink.Track, WaitQueue):
+        vc: wavelink.Player = await utils.get_player(ctx)
 
-        vc: wavelink.Player = ctx.voice_client
-
-        if arg and arg.lower() not in clear:
-            raise WrongArgument(message="Invalid argument provided.")
-
-        if arg and arg.lower() in clear:
-            await clear(ctx)
-            return
-
-        if vc.track and not vc.queue.is_empty:
-            await now_playing(ctx)
-
-        return vc.queue
+        return vc.track, vc.queue
 
     async def handle_skip(
         self,

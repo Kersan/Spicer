@@ -26,3 +26,21 @@ class MusicEmbed:
             embed.set_author(name=action, icon_url=author.avatar.url, url=DEFAULT_URL)
 
         return embed
+
+    @staticmethod
+    def warning(
+        author: User = None,
+        action: str = None,
+        title: str = None,
+        description: str = None,
+        color=0xFAA61A,
+    ):
+        embed = Embed(
+            color=color,
+            title=title,
+            description=description,
+        )
+        if author:
+            embed.set_author(name=action, icon_url=author.avatar.url, url=DEFAULT_URL)
+
+        return embed
