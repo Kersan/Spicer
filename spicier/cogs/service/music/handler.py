@@ -12,6 +12,7 @@ from spicier.errors import (
     SearchNotFound,
     VoiceConnectionError,
     WrongArgument,
+    VolumeBelowZero
 )
 
 from . import CustomFilters, utils
@@ -136,14 +137,46 @@ class MusicHandlers:
 
         return track, next
 
-    async def handle_skip_all(self, ctx: commands.Context) -> None:
+    async def handle_pause(self, ctx: commands.Context) -> None:
+        vc: wavelink.Player = await utils.get_player(ctx)
+        await vc.pause()
+
+    async def handle_resume(self, ctx: commands.Context) -> None:
+        vc: wavelink.Player = await utils.get_player(ctx)
+        await vc.resume()
+
+    async def handle_now_playing(self, ctx: commands.Context) -> wavelink.Player:
+        vc: wavelink.Player = utils.get_player(ctx)
+        
+        if not vc.track:
+            return None
+        return vc
+
+    async def handle_volume(self, ctx: commands.Context, vol) -> wavelink.Player:
+        vc: wavelink.Player = await utils.get_player(ctx)
+        
+        if not vol:
+            return vc
+
+        if not 0 < vol < 201:
+            raise VolumeBelowZero
+
+        await vc.set_volume(vol)
+        return vc
+
+
+    async def handle_skip_all(self, ctx: commands.Context) -> WaitQueue:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
             raise QueueEmpty("Queue is already empty.")
 
+        old_queue = vc.queue
+
         vc.queue.clear()
         await vc.stop()
+
+        return old_queue
 
     async def handle_force_skip(self, ctx: commands.Context) -> wavelink.Track:
         vc: wavelink.Player = await utils.get_player(ctx)
@@ -159,11 +192,14 @@ class MusicHandlers:
 
         return track
 
-    async def handle_seek(self, vc: wavelink.Player, time: str) -> str:
+    async def handle_seek(self, ctx: commands.Context, time: str) -> tuple[str, str, wavelink.Track]:
+        vc: wavelink.Player = await utils.get_player(ctx)
+        prev_pos = get_time(vc.track.possition)
+
         if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
             position = int(time)
             await vc.seek(position * 1000)
-            return utils.get_time(position)
+            return prev_pos, utils.get_time(position), vc.track
 
         elif time.isdigit():
             raise WrongArgument(message="Given time must be inside <0, song duration>.")
@@ -182,7 +218,7 @@ class MusicHandlers:
         position = minutes * 60 + seconds
 
         await vc.seek(position * 1000)
-        return utils.get_time(position)
+        return prev_pos, utils.get_time(position), vc.track
 
     async def handle_filter(self, vc: wavelink.Player, mode: str):
 

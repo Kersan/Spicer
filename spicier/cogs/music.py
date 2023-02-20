@@ -126,8 +126,8 @@ class MusicCog(commands.Cog, MusicService):
     async def skip_all_command(self, ctx: commands.Context):
         """Skip all songs in the queue."""
 
-        await self.handle_skip_all(ctx)
-        return await ctx.send("Skipped all songs!")
+        old_queue = await self.handle_skip_all(ctx)
+        return await self.message_skip_all(ctx, old_queue)
 
     @commands.command(name="force_skip", aliases=["fs"])
     @commands.check(utils.voice_check)
@@ -135,15 +135,14 @@ class MusicCog(commands.Cog, MusicService):
         """Force skip the current song."""
 
         prev_track = await self.handle_force_skip(ctx)
-        return await ctx.send(f"Skipped {prev_track.title}!")
+        return await self.message_skipped(ctx, prev_track)
 
     @commands.command(name="pause", aliases=["stop"])
     @commands.check(utils.voice_check)
     async def pause_command(self, ctx: commands.Context):
         """Pause the current song."""
 
-        vc: wavelink.Player = await utils.get_player(ctx)
-        await vc.pause()
+        await self.handle_pause(ctx)
         return await ctx.message.add_reaction("⏸")
 
     @commands.command(name="resume")
@@ -151,8 +150,7 @@ class MusicCog(commands.Cog, MusicService):
     async def resume_command(self, ctx: commands.Context):
         """Resume the current song."""
 
-        vc: wavelink.Player = await utils.get_player(ctx)
-        await vc.resume()
+        await self.handle_resume(ctx)
         return await ctx.message.add_reaction("▶")
 
     @commands.command(name="now_playing", aliases=["np"])
@@ -160,38 +158,32 @@ class MusicCog(commands.Cog, MusicService):
     async def now_playing_command(self, ctx: commands.Context):
         """Show the current song."""
 
-        vc: wavelink.Player = await utils.get_player(ctx)
+        vc = await self.handle_now_playing(ctx)
 
-        return await ctx.send(
-            f"Now playing: {vc.track}\n{utils.get_time(vc.position)} - {utils.get_time(vc.track.duration)}"
-        )
+        if not vc:
+            return await self.message_no_track(ctx)
+
+        return await self.message_now_playing(ctx, vc)
 
     @commands.command(name="volume", aliases=["vol", "v"])
     @commands.check(utils.voice_check)
     async def volume_command(self, ctx: commands.Context, *, vol: int = None):
         """Change the player volume."""
 
-        vc: wavelink.Player = await utils.get_player(ctx)
-
+        vc = await self.handle_volume(ctx, vol)
+        
         if not vol:
-            return await ctx.send(f"Current volume: {vc.volume}")
+            return await self.message_volume_current(ctx, vc)
 
-        if not 0 < vol < 201:
-            return await ctx.send("Volume must be between 1 and 200.")
-
-        await vc.set_volume(vol)
-
-        return await ctx.send(f"Set the volume to {vol}.")
+        return await self.message_volume(ctx, vc)
 
     @commands.command(name="seek")
     @commands.check(utils.player_check)
     async def seek_command(self, ctx: commands.Context, *, time: str):
         """Seek to a specific time in the current song."""
-
-        vc: wavelink.Player = await utils.get_player(ctx)
-
-        message = await self.handle_seek(vc, time)
-        return await ctx.send(f"Seeked to {message}.")
+        
+        prev, next, track = await self.handle_seek(ctx, time)
+        return await self.message_seek(ctx, prev, next, track)
 
     @commands.group(name="filter")
     async def filter_group(self, ctx: commands.Context):
@@ -202,10 +194,9 @@ class MusicCog(commands.Cog, MusicService):
     @filter_group.command(name="list")
     async def filter_list_command(self, ctx: commands.Context):
         """List all available filters."""
+    
+        return await self.message_filter_list(ctx, self.filters.modes.keys())
 
-        return await ctx.send(
-            f"Available filters: ```{', '.join(self.filters.modes.keys())}```"
-        )
 
     @filter_group.command(name="set")
     @commands.check(utils.player_check)

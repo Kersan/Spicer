@@ -3,6 +3,7 @@ from typing import Any
 import wavelink
 from discord.ext import commands
 from wavelink.errors import NodeOccupied
+from wavelink.queue import WaitQueue
 
 from ...embeds.music import MusicEmbed
 from . import utils
@@ -10,6 +11,8 @@ from .handler import MusicHandlers
 
 
 class MusicService(MusicHandlers):
+    """Music Cog Service"""
+
     def __init__(self, bot, filters):
         self.bot = bot
         self.filters = filters
@@ -112,7 +115,7 @@ class MusicService(MusicHandlers):
             mention_author=False,
         )
 
-    def _queue_fragment(self, track: wavelink.Track, index: int):
+    def _track_fragment(self, track: wavelink.Track, index: int):
         return (
             f"`{index + 1}.` [{track.title}]({track.uri}) `{utils.get_time(track.duration)}`\n"
             + f"<:Reply:1076905179619807242> **Author**: {track.author}"
@@ -127,7 +130,7 @@ class MusicService(MusicHandlers):
     ):
         desc = "\n".join(
             [
-                self._queue_fragment(track, index)
+                self._track_fragment(track, index)
                 for index, track in enumerate(queue)
                 if pos <= index and index < pos + 10
             ]
@@ -159,4 +162,69 @@ class MusicService(MusicHandlers):
     async def message_skipped_next(
         self, ctx: commands.Context, prev: wavelink.Track, next: wavelink.Track
     ):
+        embed = MusicEmbed.success(
+            ctx.author,
+            aciton="Skipped track, now playing:",
+            title=f"<:Reply:1076905179619807242> `{next.title}`",
+            url=next.uri
+        )
+        embed.add_field(value=f"**Previous**:", value=f"<:Reply:1076905179619807242> [{prev.title}]({prev.uri})")
+
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_skip_all(self, ctx: commands.Context, queue: WaitQueue):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Skipped all songs",
+            title=f"<:Reply:1076905179619807242> Skipped: `{len(queue)}` tracks"
+        )
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_no_track(self, ctx):
+        embed = MusicEmbed.warning(
+            ctx.author,
+            title="No track currenlty",
+            description="Use `play` command to add songs.\n**or**\nUse `np` command to show current song.",
+        )
+
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_now_playing(self, ctx: commands.Context, vc: wavelink.Player):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Now playing:",
+            title=f"<:Reply:1076905179619807242> {vc.track} `{utils.get_time(vc.track.duration)}`",
+        )
+
+        await ctx.reply(embed=embed, mention_author=False)
+    
+    async def message_volume(self, ctx: commands.Context, vol):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Volume",
+            title=f"Volume set to `{vol}`"
+        )
+
+        await ctx.reply(embed=embed, mention_author=False) 
+
+    async def message_volume_current(self, ctx: commands.Context, vc: wavelink.Player):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Volume",
+            title=f"Current volume is `{vol}`"
+        )
+
+        await ctx.reply(embed=embed, mention_author=False) 
+
+    async def message_seek(self, ctx: commands.Context, prev: str, next: str, track: wavelink.Track):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Seeked time",
+            title=f"`{prev}` -> `{next}`",
+            description=f"[{track.title}]({track.uri}) `{utils.get_time(track.duration)}`\n"
+            + f"<:Reply:1076905179619807242> **Author**: {track.author}"
+        )
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_filter_list(self, ctx: commands.Context, filters: list[str]):
         ...

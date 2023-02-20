@@ -15,3 +15,6 @@ class VoiceConnectionError(CommandError):
 
 class PlayerNotPlaying(CommandError):
     pass
+
+class VolumeBelowZero(CommandError):
+    pass
