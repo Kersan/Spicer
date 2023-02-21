@@ -166,9 +166,12 @@ class MusicService(MusicHandlers):
             ctx.author,
             aciton="Skipped track, now playing:",
             title=f"<:Reply:1076905179619807242> `{next.title}`",
-            url=next.uri
+            url=next.uri,
         )
-        embed.add_field(value=f"**Previous**:", value=f"<:Reply:1076905179619807242> [{prev.title}]({prev.uri})")
+        embed.add_field(
+            name=f"**Previous**:",
+            value=f"<:Reply:1076905179619807242> [{prev.title}]({prev.uri})",
+        )
 
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -176,7 +179,7 @@ class MusicService(MusicHandlers):
         embed = MusicEmbed.success(
             ctx.author,
             action="Skipped all songs",
-            title=f"<:Reply:1076905179619807242> Skipped: `{len(queue)}` tracks"
+            title=f"<:Reply:1076905179619807242> Skipped: `{len(queue)}` tracks",
         )
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -197,32 +200,30 @@ class MusicService(MusicHandlers):
         )
 
         await ctx.reply(embed=embed, mention_author=False)
-    
+
     async def message_volume(self, ctx: commands.Context, vol):
         embed = MusicEmbed.success(
-            ctx.author,
-            action="Volume",
-            title=f"Volume set to `{vol}`"
+            ctx.author, action="Volume", title=f"Volume set to `{vol}`"
         )
 
-        await ctx.reply(embed=embed, mention_author=False) 
+        await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_volume_current(self, ctx: commands.Context, vc: wavelink.Player):
+    async def message_volume_current(self, ctx: commands.Context, vol: int):
         embed = MusicEmbed.success(
-            ctx.author,
-            action="Volume",
-            title=f"Current volume is `{vol}`"
+            ctx.author, action="Volume", title=f"Current volume is `{vol}`"
         )
 
-        await ctx.reply(embed=embed, mention_author=False) 
+        await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_seek(self, ctx: commands.Context, prev: str, next: str, track: wavelink.Track):
+    async def message_seek(
+        self, ctx: commands.Context, prev: str, next: str, track: wavelink.Track
+    ):
         embed = MusicEmbed.success(
             ctx.author,
             action="Seeked time",
-            title=f"`{prev}` -> `{next}`",
+            title=f"`{prev}` > `{next}`",
             description=f"[{track.title}]({track.uri}) `{utils.get_time(track.duration)}`\n"
-            + f"<:Reply:1076905179619807242> **Author**: {track.author}"
+            + f"<:Reply:1076905179619807242> **Author**: {track.author}",
         )
         await ctx.reply(embed=embed, mention_author=False)
 

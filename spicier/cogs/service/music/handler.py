@@ -11,8 +11,8 @@ from spicier.errors import (
     QueueEmpty,
     SearchNotFound,
     VoiceConnectionError,
+    VolumeBelowZero,
     WrongArgument,
-    VolumeBelowZero
 )
 
 from . import CustomFilters, utils
@@ -146,15 +146,15 @@ class MusicHandlers:
         await vc.resume()
 
     async def handle_now_playing(self, ctx: commands.Context) -> wavelink.Player:
-        vc: wavelink.Player = utils.get_player(ctx)
-        
+        vc: wavelink.Player = await utils.get_player(ctx)
+
         if not vc.track:
             return None
         return vc
 
     async def handle_volume(self, ctx: commands.Context, vol) -> wavelink.Player:
         vc: wavelink.Player = await utils.get_player(ctx)
-        
+
         if not vol:
             return vc
 
@@ -163,7 +163,6 @@ class MusicHandlers:
 
         await vc.set_volume(vol)
         return vc
-
 
     async def handle_skip_all(self, ctx: commands.Context) -> WaitQueue:
         vc: wavelink.Player = await utils.get_player(ctx)
@@ -192,9 +191,11 @@ class MusicHandlers:
 
         return track
 
-    async def handle_seek(self, ctx: commands.Context, time: str) -> tuple[str, str, wavelink.Track]:
+    async def handle_seek(
+        self, ctx: commands.Context, time: str
+    ) -> tuple[str, str, wavelink.Track]:
         vc: wavelink.Player = await utils.get_player(ctx)
-        prev_pos = get_time(vc.track.possition)
+        prev_pos = utils.get_time(vc.position)
 
         if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
             position = int(time)

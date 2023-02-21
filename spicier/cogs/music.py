@@ -173,9 +173,9 @@ class MusicCog(commands.Cog, MusicService):
         vc = await self.handle_volume(ctx, vol)
         
         if not vol:
-            return await self.message_volume_current(ctx, vc)
+            return await self.message_volume_current(ctx, vc.volume)
 
-        return await self.message_volume(ctx, vc)
+        return await self.message_volume(ctx, vc.volume)
 
     @commands.command(name="seek")
     @commands.check(utils.player_check)
