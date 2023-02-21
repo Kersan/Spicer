@@ -221,9 +221,20 @@ class MusicHandlers:
         await vc.seek(position * 1000)
         return prev_pos, utils.get_time(position), vc.track
 
-    async def handle_filter(self, vc: wavelink.Player, mode: str):
+    async def handle_filter(self, ctx: commands.Context, mode: str):
+        vc: wavelink.Player = await utils.get_player(ctx)
 
         if not mode in self.filters.modes.keys():
             raise WrongArgument("Invalid filter mode.")
 
         await vc.set_filter(self.filters.modes[mode])
+
+    async def handle_filter_reset(self, ctx: commands.Context):
+        vc: wavelink.Player = await utils.get_player(ctx)
+
+        await vc.set_filter(self.filters.clear, seek=True)
+
+    async def handle_filter_current(self, ctx: commands.Context, modes: dict):
+        vc: wavelink.Player = await utils.get_player(ctx)
+        filter = vc.filter
+        return filter, modes[filter]

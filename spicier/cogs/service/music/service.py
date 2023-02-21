@@ -1,12 +1,14 @@
 from typing import Any
 
 import wavelink
+from discord import Embed
 from discord.ext import commands
 from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
 from ...embeds.music import MusicEmbed
 from . import utils
+from .filters import CustomFilter
 from .handler import MusicHandlers
 
 
@@ -227,5 +229,45 @@ class MusicService(MusicHandlers):
         )
         await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_filter_list(self, ctx: commands.Context, filters: list[str]):
-        ...
+    def _add_filter(self, embed: Embed, name: str, filter):
+        embed.add_field(
+            name=f"`{name}`",
+            value=f"<:Reply:1076905179619807242> {filter.description}",
+            inline=True,
+        )
+        return embed
+
+    async def message_filter_list(self, ctx: commands.Context, filters: dict):
+        embed = MusicEmbed.success(
+            ctx.author, action="Filters", title=f"Avaliable filters: "
+        )
+        for name, filter in filters.items():
+            embed = self._add_filter(embed, name, filter)
+
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_filter_set(self, ctx: commands.Context, name: str, mode: str):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Filter set",
+            title=f"Filter `{name}` set to `{mode}`",
+        )
+
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_filter_clear(self, ctx: commands.Context):
+        embed = MusicEmbed.success(ctx.author, title=f"Filters cleared")
+
+        await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_filter_current(
+        self, ctx: commands.Context, filters: str, desc: str
+    ):
+        embed = MusicEmbed.success(
+            ctx.author,
+            action="Current filter",
+            title=f"Current filters: ",
+            description=f"<:Reply:1076905179619807242> {desc}",
+        )
+
+        await ctx.reply(embed=embed, mention_author=False)

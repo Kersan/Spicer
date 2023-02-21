@@ -167,11 +167,11 @@ class MusicCog(commands.Cog, MusicService):
 
     @commands.command(name="volume", aliases=["vol", "v"])
     @commands.check(utils.voice_check)
-    async def volume_command(self, ctx: commands.Context, *, vol: int = None):
+    async def volume_command(self, ctx: commands.Context, vol: int = None):
         """Change the player volume."""
 
         vc = await self.handle_volume(ctx, vol)
-        
+
         if not vol:
             return await self.message_volume_current(ctx, vc.volume)
 
@@ -181,7 +181,7 @@ class MusicCog(commands.Cog, MusicService):
     @commands.check(utils.player_check)
     async def seek_command(self, ctx: commands.Context, *, time: str):
         """Seek to a specific time in the current song."""
-        
+
         prev, next, track = await self.handle_seek(ctx, time)
         return await self.message_seek(ctx, prev, next, track)
 
@@ -194,44 +194,37 @@ class MusicCog(commands.Cog, MusicService):
     @filter_group.command(name="list")
     async def filter_list_command(self, ctx: commands.Context):
         """List all available filters."""
-    
-        return await self.message_filter_list(ctx, self.filters.modes.keys())
 
+        return await self.message_filter_list(ctx, self.filters.modes)
 
     @filter_group.command(name="set")
     @commands.check(utils.player_check)
     async def filter_set_command(
         self,
         ctx: commands.Context,
-        *,
-        mode: Literal[
-            "boost", "piano", "metal", "flat", "spin", "nightcore", "destroy"
-        ],
+        mode: Literal["boost", "spin", "nightcore", "destroy"],
     ):
         """Set the filter mode."""
-        vc: wavelink.Player = await utils.get_player(ctx)
+        await self.handle_filter(ctx, mode)
 
-        await self.handle_filter(vc, mode)
-
-        return await ctx.send(f"Set the filter mode to {mode}.")
+        return await self.message_filter_set(ctx, mode)
 
     @filter_group.command(name="reset", aliases=["clear"])
     @commands.check(utils.player_check)
     async def filter_reset_command(self, ctx: commands.Context):
         """Reset the filter mode."""
 
-        vc: wavelink.Player = await utils.get_player(ctx)
-
-        await vc.set_filter(self.filters.clear, seek=True)
+        await self.handle_filter_reset(ctx)
+        return await self.message_filter_reset(ctx)
 
     @filter_group.command(name="current", aliases=["show"])
     @commands.check(utils.player_check)
     async def filter_current_command(self, ctx: commands.Context):
         """Show the current filter mode."""
 
-        vc: wavelink.Player = await utils.get_player(ctx)
+        filter, description = self.handle_filter_current(ctx, self.filters.modes)
 
-        return await ctx.send(f"Current filter mode: {vc.filter}")
+        return await self.message_filter_current(ctx, filter, description)
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
