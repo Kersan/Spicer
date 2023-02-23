@@ -15,25 +15,35 @@ from wavelink.filters import (
 
 
 class CustomFilter(Filter):
-    def __init__(self, descritpion: str, **kwargs):
+    def __init__(self, name: str, descritpion: str, **kwargs):
         super().__init__(**kwargs)
 
+        self._name = name
         self._description = descritpion
 
     @property
     def description(self) -> str:
         return self._description
+    
+    @property
+    def name(self) -> str:
+        return self._name
 
 
 class CustomFilters:
     def __init__(self):
         self._modes = {
-            "boost": CustomFilter("Boosts the bass.", equalizer=Equalizer.boost()),
-            "destroy": CustomFilter(
-                "Destroy the audio.", distortion=Distortion(scale=2)
+            "boost": CustomFilter(
+                "boost", "Boosts the bass.", equalizer=Equalizer.boost()
             ),
-            "spin": CustomFilter("Guess what this does.", rotation=Rotation(0.5)),
+            "destroy": CustomFilter(
+                "destroy", "Destroy the audio.", distortion=Distortion(scale=2)
+            ),
+            "spin": CustomFilter(
+                "spin", "Guess what this does.", rotation=Rotation(0.5)
+            ),
             "nightcore": CustomFilter(
+                "nightcore",
                 "For people with mental issues.",
                 timescale=Timescale(pitch=1.25, speed=1.15, rate=1.15),
             ),

@@ -154,7 +154,7 @@ class MusicService(MusicHandlers):
     async def message_skipped(self, ctx: commands.Context, track: wavelink.Track):
         embed = MusicEmbed.success(
             ctx.author,
-            "Skipped current song",
+            action="Skipped current song",
             title=f"<:Reply:1076905179619807242> `{track.title}`",
             url=track.uri,
         )
@@ -166,7 +166,7 @@ class MusicService(MusicHandlers):
     ):
         embed = MusicEmbed.success(
             ctx.author,
-            aciton="Skipped track, now playing:",
+            action="Skipped track, now playing:",
             title=f"<:Reply:1076905179619807242> `{next.title}`",
             url=next.uri,
         )
@@ -174,6 +174,8 @@ class MusicService(MusicHandlers):
             name=f"**Previous**:",
             value=f"<:Reply:1076905179619807242> [{prev.title}]({prev.uri})",
         )
+
+        print(next.info, next._stream, next._dead)
 
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -196,9 +198,22 @@ class MusicService(MusicHandlers):
 
     async def message_now_playing(self, ctx: commands.Context, vc: wavelink.Player):
         embed = MusicEmbed.success(
-            ctx.author,
-            action="Now playing:",
-            title=f"<:Reply:1076905179619807242> {vc.track} `{utils.get_time(vc.track.duration)}`",
+            author=ctx.author,
+            action="Now playing",
+            title=f"<:Reply:1076905179619807242>`{vc.track.title}`",
+            url=vc.track.uri,
+        )
+
+        embed.add_field(
+            name="**Track's Duration**:",
+            value=f"`{utils.get_time(vc.track.duration)}`",
+            inline=True,
+        )
+        embed.add_field(
+            name="**Current' Volume**:", value=f"`{vc.volume}`", inline=True
+        )
+        embed.add_field(
+            name="**Track's Author**:", value=f"`{vc.track.author}`", inline=True
         )
 
         await ctx.reply(embed=embed, mention_author=False)
@@ -223,10 +238,11 @@ class MusicService(MusicHandlers):
         embed = MusicEmbed.success(
             ctx.author,
             action="Seeked time",
-            title=f"`{prev}` > `{next}`",
+            title=f"Previously: `{prev}` | Current: `{next}`",
             description=f"[{track.title}]({track.uri}) `{utils.get_time(track.duration)}`\n"
             + f"<:Reply:1076905179619807242> **Author**: {track.author}",
         )
+
         await ctx.reply(embed=embed, mention_author=False)
 
     def _add_filter(self, embed: Embed, name: str, filter):
@@ -246,11 +262,11 @@ class MusicService(MusicHandlers):
 
         await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_filter_set(self, ctx: commands.Context, name: str, mode: str):
+    async def message_filter_set(self, ctx: commands.Context, mode: str):
         embed = MusicEmbed.success(
             ctx.author,
-            action="Filter set",
-            title=f"Filter `{name}` set to `{mode}`",
+            action="Filters",
+            title=f"Filter set to `{mode}`",
         )
 
         await ctx.reply(embed=embed, mention_author=False)
@@ -261,12 +277,12 @@ class MusicService(MusicHandlers):
         await ctx.reply(embed=embed, mention_author=False)
 
     async def message_filter_current(
-        self, ctx: commands.Context, filters: str, desc: str
+        self, ctx: commands.Context, filter: str, desc: str
     ):
         embed = MusicEmbed.success(
             ctx.author,
-            action="Current filter",
-            title=f"Current filters: ",
+            action="Filters",
+            title=filter,
             description=f"<:Reply:1076905179619807242> {desc}",
         )
 

@@ -15,7 +15,7 @@ from spicier.errors import (
     WrongArgument,
 )
 
-from . import CustomFilters, utils
+from . import CustomFilter, CustomFilters, utils
 
 
 class MusicHandlers:
@@ -234,7 +234,12 @@ class MusicHandlers:
 
         await vc.set_filter(self.filters.clear, seek=True)
 
-    async def handle_filter_current(self, ctx: commands.Context, modes: dict):
+    async def handle_filter_current(
+        self, ctx: commands.Context, modes: dict[str:CustomFilter]
+    ):
         vc: wavelink.Player = await utils.get_player(ctx)
-        filter = vc.filter
-        return filter, modes[filter]
+        filter = vc.filter.name if vc.filter else None
+        return (
+            filter,
+            modes[filter].description if filter else "Ten filtr nie posiada opisu.",
+        )

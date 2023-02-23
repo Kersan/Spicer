@@ -185,7 +185,7 @@ class MusicCog(commands.Cog, MusicService):
         prev, next, track = await self.handle_seek(ctx, time)
         return await self.message_seek(ctx, prev, next, track)
 
-    @commands.group(name="filter")
+    @commands.group(name="filter", aliases=["filters"])
     async def filter_group(self, ctx: commands.Context):
         """Filter group."""
         if not ctx.invoked_subcommand:
@@ -215,14 +215,14 @@ class MusicCog(commands.Cog, MusicService):
         """Reset the filter mode."""
 
         await self.handle_filter_reset(ctx)
-        return await self.message_filter_reset(ctx)
+        return await self.message_filter_clear(ctx)
 
     @filter_group.command(name="current", aliases=["show"])
     @commands.check(utils.player_check)
     async def filter_current_command(self, ctx: commands.Context):
         """Show the current filter mode."""
 
-        filter, description = self.handle_filter_current(ctx, self.filters.modes)
+        filter, description = await self.handle_filter_current(ctx, self.filters.modes)
 
         return await self.message_filter_current(ctx, filter, description)
 

@@ -1,2 +1,2 @@
-from .filters import CustomFilters
+from .filters import CustomFilters, CustomFilter
 from .service import MusicService
