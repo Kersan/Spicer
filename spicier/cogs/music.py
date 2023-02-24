@@ -158,12 +158,12 @@ class MusicCog(commands.Cog, MusicService):
     async def now_playing_command(self, ctx: commands.Context):
         """Show the current song."""
 
-        vc = await self.handle_now_playing(ctx)
+        vc, image = await self.handle_now_playing(ctx)
 
         if not vc:
             return await self.message_no_track(ctx)
 
-        return await self.message_now_playing(ctx, vc)
+        return await self.message_now_playing(ctx, vc, image)
 
     @commands.command(name="volume", aliases=["vol", "v"])
     @commands.check(utils.voice_check)
@@ -202,7 +202,7 @@ class MusicCog(commands.Cog, MusicService):
     async def filter_set_command(
         self,
         ctx: commands.Context,
-        mode: Literal["boost", "spin", "nightcore", "destroy"],
+        mode: str,
     ):
         """Set the filter mode."""
         await self.handle_filter(ctx, mode)

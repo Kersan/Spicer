@@ -24,7 +24,7 @@ class CustomFilter(Filter):
     @property
     def description(self) -> str:
         return self._description
-    
+
     @property
     def name(self) -> str:
         return self._name
@@ -36,8 +36,34 @@ class CustomFilters:
             "boost": CustomFilter(
                 "boost", "Boosts the bass.", equalizer=Equalizer.boost()
             ),
-            "destroy": CustomFilter(
-                "destroy", "Destroy the audio.", distortion=Distortion(scale=2)
+            "destroy1": CustomFilter(
+                "destroy",
+                "Destroy the audio. 1",
+                distortion=Distortion(
+                    scale=0.5, sin_offset=0, sin_scale=0.5, cos_offset=0, cos_scale=0.5
+                ),
+            ),
+            "destroy2": CustomFilter(
+                "destroy",
+                "Destroy the audio. 2",
+                distortion=Distortion(
+                    scale=1.5,
+                    sin_offset=0.5,
+                    sin_scale=1.5,
+                    cos_offset=0.5,
+                    cos_scale=1.5,
+                ),
+            ),
+            "destroy3": CustomFilter(
+                "destroy",
+                "Destroy the audio. 3",
+                distortion=Distortion(
+                    scale=1,
+                    sin_offset=1,
+                    sin_scale=1,
+                    cos_offset=1,
+                    cos_scale=1,
+                ),
             ),
             "spin": CustomFilter(
                 "spin", "Guess what this does.", rotation=Rotation(0.5)

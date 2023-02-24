@@ -73,16 +73,13 @@ class MusicService(MusicHandlers):
     ):
         embed = MusicEmbed.success(
             author=ctx.author,
-            action="Play song",
-            title=f"<:Reply:1076905179619807242>`{track.title}`",
+            action=f"{ctx.guild.name} | Added to queue",
+            title=f"`{track.title}`",
             url=track.uri,
             description=f"Added by: {ctx.author.mention} | Duration: `{utils.get_time(track.length)}` | Position: `{len(vc.queue)}`",
         )
 
-        await ctx.reply(
-            embed=embed,
-            mention_author=False,
-        )
+        await ctx.reply(embed=embed, mention_author=False)
 
     async def message_play_multiple(
         self, ctx: commands.Context, vc: wavelink.Player, tracks: list[wavelink.Track]
@@ -139,8 +136,8 @@ class MusicService(MusicHandlers):
         )
         embed = MusicEmbed.success(
             ctx.author,
-            "Queue display",
-            title=f"**Current queue lenght**: `{len(queue)}`",
+            f"{ctx.guild.name} | Queue display",
+            title=f"**{len(queue)}** songs in queue",
             description=desc,
         )
         embed.add_field(
@@ -154,8 +151,8 @@ class MusicService(MusicHandlers):
     async def message_skipped(self, ctx: commands.Context, track: wavelink.Track):
         embed = MusicEmbed.success(
             ctx.author,
-            action="Skipped current song",
-            title=f"<:Reply:1076905179619807242> `{track.title}`",
+            "Skipped current song",
+            title=f"`{track.title}`",
             url=track.uri,
         )
 
@@ -164,18 +161,19 @@ class MusicService(MusicHandlers):
     async def message_skipped_next(
         self, ctx: commands.Context, prev: wavelink.Track, next: wavelink.Track
     ):
+        vc: wavelink.Player = await utils.get_player(ctx)
+
         embed = MusicEmbed.success(
             ctx.author,
-            action="Skipped track, now playing:",
-            title=f"<:Reply:1076905179619807242> `{next.title}`",
+            f"{ctx.guild.name} | Skipped, now playing",
+            title=f"`{next.title}`",
             url=next.uri,
+            description=f"Skipped by: {ctx.author.mention} | Duration: `{utils.get_time(next.length)}` | Queue: `{len(vc.queue)}`",
         )
         embed.add_field(
             name=f"**Previous**:",
             value=f"<:Reply:1076905179619807242> [{prev.title}]({prev.uri})",
         )
-
-        print(next.info, next._stream, next._dead)
 
         await ctx.reply(embed=embed, mention_author=False)
 
@@ -196,27 +194,31 @@ class MusicService(MusicHandlers):
 
         await ctx.reply(embed=embed, mention_author=False)
 
-    async def message_now_playing(self, ctx: commands.Context, vc: wavelink.Player):
+    async def message_now_playing(
+        self, ctx: commands.Context, vc: wavelink.Player, file=None
+    ):
         embed = MusicEmbed.success(
             author=ctx.author,
-            action="Now playing",
-            title=f"<:Reply:1076905179619807242>`{vc.track.title}`",
+            action=f"{ctx.guild.name} | Now playing",
+            title=f"`{vc.track.title}`",
             url=vc.track.uri,
         )
 
+        embed.add_field(name="**Current Volume**:", value=f"`{vc.volume}`")
+        embed.add_field(name="**Track's Author**:", value=f"`{vc.track.author}`")
         embed.add_field(
-            name="**Track's Duration**:",
-            value=f"`{utils.get_time(vc.track.duration)}`",
-            inline=True,
+            name="**Track's Source**:",
+            value=f"`{vc.track.info['sourceName'] or 'Unknown'}`",
         )
         embed.add_field(
-            name="**Current' Volume**:", value=f"`{vc.volume}`", inline=True
-        )
-        embed.add_field(
-            name="**Track's Author**:", value=f"`{vc.track.author}`", inline=True
+            name="**Position**:",
+            value=f"**`{utils.get_time(vc.position)}`**/`{utils.get_time(vc.track.duration)}`",
         )
 
-        await ctx.reply(embed=embed, mention_author=False)
+        if file:
+            embed.set_image(url="attachment://progress_bar.png")
+
+        await ctx.reply(embed=embed, mention_author=False, file=file)
 
     async def message_volume(self, ctx: commands.Context, vol):
         embed = MusicEmbed.success(
