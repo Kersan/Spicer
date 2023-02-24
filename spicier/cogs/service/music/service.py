@@ -239,17 +239,26 @@ class MusicService(MusicHandlers):
         await ctx.reply(embed=embed, mention_author=False)
 
     async def message_seek(
-        self, ctx: commands.Context, prev: str, next: str, track: wavelink.Track
+        self, ctx: commands.Context, prev: int, next: int, vc: wavelink.Player
     ):
+        track: wavelink.Track = vc.track
+
         embed = MusicEmbed.success(
             ctx.author,
             action="Seeked time",
-            title=f"Previously: `{prev}` | Current: `{next}`",
-            description=f"[{track.title}]({track.uri}) `{utils.get_time(track.duration)}`\n"
-            + f"<:Reply:1076905179619807242> **Author**: {track.author}",
+            title=f"`{track.title}`",
+            description=f"Track's duration: `{utils.get_time(track.duration)}`",
+            url=track.uri,
+        )
+        embed.add_field(
+            name="Seeked from - to:",
+            value=f"`{utils.get_time(prev)}` - `{utils.get_time(next)}`",
         )
 
-        await ctx.reply(embed=embed, mention_author=False)
+        image = utils.get_proggres_bar(next, track.duration)
+        embed.set_image(url=f"attachment://{image.filename}")
+
+        await ctx.reply(embed=embed, mention_author=False, file=image)
 
     def _add_filter(self, embed: Embed, name: str, filter):
         embed.add_field(

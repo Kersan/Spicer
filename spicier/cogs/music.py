@@ -182,8 +182,8 @@ class MusicCog(commands.Cog, MusicService):
     async def seek_command(self, ctx: commands.Context, *, time: str):
         """Seek to a specific time in the current song."""
 
-        prev, next, track = await self.handle_seek(ctx, time)
-        return await self.message_seek(ctx, prev, next, track)
+        prev, next, vc = await self.handle_seek(ctx, time)
+        return await self.message_seek(ctx, prev, next, vc)
 
     @commands.group(name="filter", aliases=["filters"])
     async def filter_group(self, ctx: commands.Context):

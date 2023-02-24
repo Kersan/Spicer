@@ -201,14 +201,14 @@ class MusicHandlers:
 
     async def handle_seek(
         self, ctx: commands.Context, time: str
-    ) -> tuple[str, str, wavelink.Track]:
+    ) -> tuple[str, str, wavelink.Player]:
         vc: wavelink.Player = await utils.get_player(ctx)
-        prev_pos = utils.get_time(vc.position)
+        prev_pos = vc.position
 
         if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
             position = int(time)
             await vc.seek(position * 1000)
-            return prev_pos, utils.get_time(position), vc.track
+            return prev_pos, position, vc
 
         elif time.isdigit():
             raise WrongArgument(message="Given time must be inside <0, song duration>.")
@@ -227,7 +227,7 @@ class MusicHandlers:
         position = minutes * 60 + seconds
 
         await vc.seek(position * 1000)
-        return prev_pos, utils.get_time(position), vc.track
+        return prev_pos, position, vc
 
     async def handle_filter(self, ctx: commands.Context, mode: str):
         vc: wavelink.Player = await utils.get_player(ctx)
