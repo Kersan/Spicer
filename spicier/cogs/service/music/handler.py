@@ -1,12 +1,10 @@
 import re
-from io import BytesIO
 from typing import Callable, Union
 
 import wavelink
 from discord import File, VoiceChannel
 from discord.ext import commands
 from discord.ext.commands import Parameter
-from PIL import Image
 from wavelink.queue import WaitQueue
 
 from spicier.errors import (
@@ -101,10 +99,14 @@ class MusicHandlers:
     async def handle_queue(
         self,
         ctx: commands.Context,
-    ) -> tuple[wavelink.Track, WaitQueue]:
+    ) -> tuple[wavelink.Track, WaitQueue, File]:
         vc: wavelink.Player = await utils.get_player(ctx)
 
-        return vc.track, vc.queue
+        file = None
+        if vc.track:
+            file = utils.get_proggres_bar(vc.position, vc.track.duration)
+
+        return (vc.track, vc.queue, file)
 
     async def handle_skip(
         self,
@@ -147,33 +149,12 @@ class MusicHandlers:
         vc: wavelink.Player = await utils.get_player(ctx)
         await vc.resume()
 
-    def _get_proggres_bar(self, position, duration) -> File:
-        background_image = Image.open("img/background.png")
-        progress_image = Image.open("img/progress.png")
-
-        progress_width = int((position / duration) * background_image.width)
-
-        progress_bar_crop = progress_image.crop(
-            (0, 0, progress_width, progress_image.height)
-        )
-
-        final = background_image.copy()
-        final.paste(progress_bar_crop, (0, 0))
-
-        final.save("img/progres_bar.png")
-
-        with BytesIO() as image_binary:
-            final.save(image_binary, "png")
-            image_binary.seek(0)
-
-            return File(fp=image_binary, filename="progress_bar.png")
-
     async def handle_now_playing(
         self, ctx: commands.Context
     ) -> tuple[wavelink.Player, File]:
         vc: wavelink.Player = await utils.get_player(ctx)
 
-        file = self._get_proggres_bar(vc.position, vc.track.duration)
+        file = utils.get_proggres_bar(vc.position, vc.track.duration)
 
         if not vc.track:
             return (None, None)

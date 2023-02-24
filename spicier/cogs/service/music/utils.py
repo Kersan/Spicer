@@ -1,8 +1,10 @@
+from io import BytesIO
 from typing import Union
 
 import wavelink
-from discord import Guild, VoiceChannel
+from discord import File, Guild, VoiceChannel
 from discord.ext import commands
+from PIL import Image
 
 from spicier.errors import PlayerNotPlaying
 
@@ -69,3 +71,25 @@ async def get_player(
 def get_lenght(tracks: list[wavelink.Track]) -> str:
     """Get the total length of the queue."""
     return get_time(sum(track.length for track in tracks))
+
+
+def get_proggres_bar(position, duration) -> File:
+    background_image = Image.open("img/background.png")
+    progress_image = Image.open("img/progress.png")
+
+    progress_width = int((position / duration) * background_image.width)
+
+    progress_bar_crop = progress_image.crop(
+        (0, 0, progress_width, progress_image.height)
+    )
+
+    final = background_image.copy()
+    final.paste(progress_bar_crop, (0, 0))
+
+    final.save("img/progres_bar.png")
+
+    with BytesIO() as image_binary:
+        final.save(image_binary, "png")
+        image_binary.seek(0)
+
+        return File(fp=image_binary, filename="progress_bar.png")

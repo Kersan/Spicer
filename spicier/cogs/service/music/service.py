@@ -7,17 +7,17 @@ from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
 from ...embeds.music import MusicEmbed
-from . import utils
-from .filters import CustomFilter
+from . import CustomFilters, utils
 from .handler import MusicHandlers
 
 
 class MusicService(MusicHandlers):
     """Music Cog Service"""
 
-    def __init__(self, bot, filters):
+    def __init__(self, bot, filters: CustomFilters):
         self.bot = bot
         self.filters = filters
+        self.filter_modes = filters.modes
 
         super().__init__(filters)
 
@@ -72,8 +72,8 @@ class MusicService(MusicHandlers):
         self, ctx: commands.Context, vc: wavelink.Player, track: wavelink.Track
     ):
         embed = MusicEmbed.success(
-            author=ctx.author,
-            action=f"{ctx.guild.name} | Added to queue",
+            ctx.author,
+            f"{ctx.guild.name} | Added to queue",
             title=f"`{track.title}`",
             url=track.uri,
             description=f"Added by: {ctx.author.mention} | Duration: `{utils.get_time(track.length)}` | Position: `{len(vc.queue)}`",
@@ -86,8 +86,8 @@ class MusicService(MusicHandlers):
     ):
         embed = MusicEmbed.success(
             ctx.author,
-            action=f"Play list of songs",
-            title=f"<:Reply:1076905179619807242>`Added {len(tracks)} songs to queue`",
+            f"{ctx.guild.name} | Added to queue",
+            title=f"Playlist of **{len(tracks)}** tracks",
             url=tracks[0].uri,
             description=f"Added by: {ctx.author.mention} | Duration: `{utils.get_lenght(tracks)}` | Queue lenght: `{len(vc.queue)}`",
         )
@@ -126,12 +126,13 @@ class MusicService(MusicHandlers):
         current: wavelink.Track,
         queue: wavelink.WaitQueue,
         pos: int,
+        file=None,
     ):
         desc = "\n".join(
             [
                 self._track_fragment(track, index)
                 for index, track in enumerate(queue)
-                if pos <= index and index < pos + 10
+                if pos <= index and index < pos + 8
             ]
         )
         embed = MusicEmbed.success(
@@ -146,7 +147,10 @@ class MusicService(MusicHandlers):
             + f"<:Reply:1076905179619807242>**Author**: {current.author}",
         )
 
-        await ctx.reply(embed=embed, mention_author=False)
+        if file:
+            embed.set_image(url=f"attachment://{file.filename}")
+
+        await ctx.reply(embed=embed, mention_author=False, file=file)
 
     async def message_skipped(self, ctx: commands.Context, track: wavelink.Track):
         embed = MusicEmbed.success(
@@ -255,11 +259,11 @@ class MusicService(MusicHandlers):
         )
         return embed
 
-    async def message_filter_list(self, ctx: commands.Context, filters: dict):
+    async def message_filter_list(self, ctx: commands.Context):
         embed = MusicEmbed.success(
             ctx.author, action="Filters", title=f"Avaliable filters: "
         )
-        for name, filter in filters.items():
+        for name, filter in self.filter_modes.items():
             embed = self._add_filter(embed, name, filter)
 
         await ctx.reply(embed=embed, mention_author=False)

@@ -81,7 +81,7 @@ class MusicCog(commands.Cog, MusicService):
     async def queue_group(self, ctx: commands.Context, arg: Optional[int] = 0):
         """Show the current queue."""
 
-        current, queue = await self.handle_queue(ctx)
+        current, queue, file = await self.handle_queue(ctx)
 
         if not queue or not current:
             return await self.message_queue_is_empty(ctx)
@@ -89,7 +89,7 @@ class MusicCog(commands.Cog, MusicService):
         if arg > len(queue):
             arg = max([0, len(queue) - 10])
 
-        return await self.message_queue(ctx, current, queue, arg)
+        return await self.message_queue(ctx, current, queue, arg, file)
 
     @queue_group.command(name="clear", aliases=["reset"])
     async def queue_clear_command(self, ctx: commands.Context):
