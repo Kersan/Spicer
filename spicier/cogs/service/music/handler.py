@@ -25,6 +25,12 @@ class MusicHandlers:
     async def handle_connect(
         self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
+        if await utils.voice_check(ctx):
+            raise VoiceConnectionError("Already in voice channel.")
+
+        if ctx.voice_client and not self.is_alone(ctx):
+            raise VoiceConnectionError("In voice channel with someone.")
+
         if channel and channel.guild != ctx.guild:
             raise WrongArgument(message="Channel not found.")
 
