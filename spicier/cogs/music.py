@@ -207,7 +207,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         List all available filters.
         """
-        return await self.message_filter_list(ctx, self.filters.modes)
+        return await self.message_filter_list(ctx)
 
     @filter_group.command(name="set")
     @commands.check(utils.player_check)

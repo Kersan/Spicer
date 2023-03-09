@@ -190,7 +190,7 @@ class MusicService(MusicHandlers):
         await ctx.reply(embed=embed, mention_author=False)
 
     async def message_now_playing(
-        self, ctx: commands.Context, vc: wavelink.Player, file=None
+        self, ctx: commands.Context, vc: wavelink.Player, image=None
     ):
         embed = MusicEmbed.success(
             author=ctx.author,
@@ -210,10 +210,10 @@ class MusicService(MusicHandlers):
             value=f"**`{utils.get_time(vc.position)}`**/`{utils.get_time(vc.track.duration)}`",
         )
 
-        if file:
-            embed.set_image(url="attachment://progress_bar.png")
+        if image:
+            embed.set_image(url=f"attachment://{{image.filename}}")
 
-        await ctx.reply(embed=embed, mention_author=False, file=file)
+        await ctx.reply(embed=embed, mention_author=False, file=image)
 
     async def message_volume(self, ctx: commands.Context, vol):
         embed = MusicEmbed.success(

@@ -1,6 +1,9 @@
 import logging
+from typing import Literal, Optional
 
+from discord import HTTPException, Object
 from discord.ext import commands
+from discord.ext.commands import Context, Greedy
 
 
 class AdminCog(commands.Cog):
@@ -43,16 +46,43 @@ class AdminCog(commands.Cog):
         await ctx.message.add_reaction("✅")
         return await ctx.reply(msg)
 
-    @admin.command(name="sync")
+    @admin.command()
+    @commands.guild_only()
     @commands.is_owner()
-    async def sync(self, ctx):
-        """Syncs the command tree."""
-        try:
-            await self.bot.tree.sync()
-            await ctx.message.add_reaction("✅")
-        except Exception as e:
-            logging.error(e)
-            await ctx.message.add_reaction("❌")
+    async def sync(
+        self,
+        ctx: Context,
+        guilds: Greedy[Object],
+        spec: Optional[Literal["~", "*", "^"]] = None,
+    ) -> None:
+        if not guilds:
+            if spec == "~":
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "*":
+                ctx.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "^":
+                ctx.bot.tree.clear_commands(guild=ctx.guild)
+                await ctx.bot.tree.sync(guild=ctx.guild)
+                synced = []
+            else:
+                synced = await ctx.bot.tree.sync()
+
+            await ctx.send(
+                f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+            )
+            return
+
+        ret = 0
+        for guild in guilds:
+            try:
+                await ctx.bot.tree.sync(guild=guild)
+            except HTTPException:
+                pass
+            else:
+                ret += 1
+
+        await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
 
 async def setup(bot):
