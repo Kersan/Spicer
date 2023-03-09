@@ -74,6 +74,16 @@ def get_lenght(tracks: list[wavelink.Track]) -> str:
 
 
 def get_proggres_bar(position, duration) -> File:
+    final = _build_progres_bar(position, duration)
+
+    with BytesIO() as image_binary:
+        final.save(image_binary, "png")
+        image_binary.seek(0)
+
+        return File(fp=image_binary, filename="progress.png")
+
+
+def _build_progres_bar(position, duration) -> Image:
     background_image = Image.open("img/background.png")
     progress_image = Image.open("img/progress.png")
 
@@ -86,10 +96,4 @@ def get_proggres_bar(position, duration) -> File:
     final = background_image.copy()
     final.paste(progress_bar_crop, (0, 0))
 
-    final.save("img/progres_bar.png")
-
-    with BytesIO() as image_binary:
-        final.save(image_binary, "png")
-        image_binary.seek(0)
-
-        return File(fp=image_binary, filename="progress_bar.png")
+    return final

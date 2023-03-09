@@ -43,10 +43,7 @@ class MusicService(MusicHandlers):
             description=f"👉 {ctx.voice_client.channel}",
         )
 
-        await ctx.reply(
-            embed=embed,
-            mention_author=False,
-        )
+        await ctx.reply(embed=embed, mention_author=False)
 
     async def message_connected(self, ctx: commands.Context, vc: wavelink.Player):
         embed = MusicEmbed.success(
@@ -55,10 +52,7 @@ class MusicService(MusicHandlers):
             title=f"🔊 **Connected to {vc.channel}**",
         )
 
-        await ctx.reply(
-            embed=embed,
-            mention_author=False,
-        )
+        await ctx.reply(embed=embed, mention_author=False)
 
     async def message_disconnected(self, ctx: commands.Context, channel_name: str):
         embed = MusicEmbed.success(
@@ -101,10 +95,7 @@ class MusicService(MusicHandlers):
             description="Use `play` command to add songs.\n**or**\nUse `np` command to show current song.",
         )
 
-        await ctx.reply(
-            embed=embed,
-            mention_author=False,
-        )
+        await ctx.reply(embed=embed, mention_author=False)
 
     async def message_queue_cleared(self, ctx: commands.Context):
         await ctx.reply(
