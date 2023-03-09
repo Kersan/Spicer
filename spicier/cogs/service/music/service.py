@@ -11,15 +11,13 @@ from . import CustomFilters, utils
 from .handler import MusicHandlers
 
 
-class MusicService(MusicHandlers):
+class MusicService:
     """Music Cog Service"""
 
     def __init__(self, bot, filters: CustomFilters):
         self.bot = bot
         self.filters = filters
-        self.filter_modes = filters.modes
-
-        super().__init__(filters)
+        self.handler = MusicHandlers(filters)
 
     async def create_nodes(self, config):
         try:
@@ -263,7 +261,7 @@ class MusicService(MusicHandlers):
         embed = MusicEmbed.success(
             ctx.author, action="Filters", title=f"Avaliable filters: "
         )
-        for name, filter in self.filter_modes.items():
+        for name, filter in self.filters.modes.items():
             embed = self._add_filter(embed, name, filter)
 
         await ctx.reply(embed=embed, mention_author=False)

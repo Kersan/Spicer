@@ -30,7 +30,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Connect to a voice channel.
         """
-        vc: wavelink.Player = await self.handle_connect(ctx, channel=channel)
+        vc: wavelink.Player = await self.handler.connect(ctx, channel=channel)
         return await self.message_connected(ctx, vc)
 
     @commands.command(name="disconnect", aliases=["leave"])
@@ -39,7 +39,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Disconnect from a voice channel.
         """
-        channel = await self.handle_disconnect(ctx)
+        channel = await self.handler.disconnect(ctx)
         return self.message_disconnected(ctx, channel)
 
     @commands.command()
@@ -52,7 +52,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Play a song* with the given search query.
         """
-        tracks, vc = await self.handle_play(
+        tracks, vc = await self.handler.play(
             ctx=ctx,
             track=track,
             connect=self.connect_command,
@@ -62,14 +62,12 @@ class MusicCog(commands.Cog, MusicService):
         if not vc or not tracks:
             return
 
-        final: wavelink.Track = tracks[0]
-
         if not vc.track:
             now = vc.queue.get()
             await vc.play(now)
 
         return (
-            await self.message_play_single(ctx, vc, final)
+            await self.message_play_single(ctx, vc, tracks[0])
             if len(tracks) < 2
             else await self.message_play_multiple(ctx, vc, tracks)
         )
@@ -80,7 +78,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Show the current queue.
         """
-        current, queue, file = await self.handle_queue(ctx)
+        current, queue, file = await self.handler.queue(ctx)
 
         if not queue or not current:
             return await self.message_queue_is_empty(ctx)
@@ -114,7 +112,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Skip the current song.
         """
-        prev_track, next_track = await self.handle_skip(
+        prev_track, next_track = await self.handler.skip(
             ctx, self.force_skip_command, self.skip_all_command, arg
         )
 
@@ -129,7 +127,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Skip all songs in the queue.
         """
-        old_queue = await self.handle_skip_all(ctx)
+        old_queue = await self.handler.skip_all(ctx)
         return await self.message_skip_all(ctx, old_queue)
 
     @commands.command(name="force_skip", aliases=["fs"])
@@ -138,7 +136,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Force skip the current song.
         """
-        prev_track = await self.handle_force_skip(ctx)
+        prev_track = await self.handler.force_skip(ctx)
         return await self.message_skipped(ctx, prev_track)
 
     @commands.command(name="pause", aliases=["stop"])
@@ -147,7 +145,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Pause the current song.
         """
-        await self.handle_pause(ctx)
+        await self.handler.pause(ctx)
         return await ctx.message.add_reaction("⏸")
 
     @commands.command(name="resume")
@@ -156,7 +154,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Resume the current song.
         """
-        await self.handle_resume(ctx)
+        await self.handler.resume(ctx)
         return await ctx.message.add_reaction("▶")
 
     @commands.command(name="now_playing", aliases=["np"])
@@ -165,7 +163,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Show the current song.
         """
-        vc, image = await self.handle_now_playing(ctx)
+        vc, image = await self.handler.now_playing(ctx)
 
         if not vc:
             return await self.message_no_track(ctx)
@@ -178,7 +176,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Change the player volume."
         """
-        vc = await self.handle_volume(ctx, vol)
+        vc = await self.handler.volume(ctx, vol)
 
         if not vol:
             return await self.message_volume_current(ctx, vc.volume)
@@ -191,7 +189,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Seek to a specific time in the current song.
         """
-        prev, next, vc = await self.handle_seek(ctx, time)
+        prev, next, vc = await self.handler.seek(ctx, time)
         return await self.message_seek(ctx, prev, next, vc)
 
     @commands.group(name="filter", aliases=["filters"])
@@ -219,7 +217,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Set the filter mode.
         """
-        await self.handle_filter(ctx, mode)
+        await self.handler.filter(ctx, mode)
 
         return await self.message_filter_set(ctx, mode)
 
@@ -229,7 +227,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Reset the filter mode.
         """
-        await self.handle_filter_reset(ctx)
+        await self.handler.filter_reset(ctx)
         return await self.message_filter_clear(ctx)
 
     @filter_group.command(name="current", aliases=["show"])
@@ -238,7 +236,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Show the current filter mode.
         """
-        filter, description = await self.handle_filter_current(ctx, self.filters.modes)
+        filter, description = await self.handler.filter_current(ctx, self.filters.modes)
 
         return await self.message_filter_current(ctx, filter, description)
 

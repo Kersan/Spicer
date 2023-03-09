@@ -22,7 +22,8 @@ class MusicHandlers:
     def __init__(self, filters: CustomFilters):
         self.filters = filters
 
-    async def handle_connect(
+
+    async def connect(
         self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
         if await utils.voice_check(ctx):
@@ -43,7 +44,7 @@ class MusicHandlers:
         finally:
             return vc
 
-    async def handle_disconnect(self, ctx: commands.Context) -> str:
+    async def disconnect(self, ctx: commands.Context) -> str:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if vc.queue:
@@ -54,7 +55,7 @@ class MusicHandlers:
         await ctx.voice_client.disconnect()
         return channel_name
 
-    async def handle_play(
+    async def play(
         self,
         ctx: commands.Context,
         track: Union[str, wavelink.Track],
@@ -102,7 +103,7 @@ class MusicHandlers:
 
         return tracks, vc
 
-    async def handle_queue(
+    async def queue(
         self,
         ctx: commands.Context,
     ) -> tuple[wavelink.Track, WaitQueue, File]:
@@ -114,7 +115,7 @@ class MusicHandlers:
 
         return (vc.track, vc.queue, file)
 
-    async def handle_skip(
+    async def skip(
         self,
         ctx: commands.Context,
         force_skip: Callable,
@@ -147,15 +148,15 @@ class MusicHandlers:
 
         return track, next
 
-    async def handle_pause(self, ctx: commands.Context) -> None:
+    async def pause(self, ctx: commands.Context) -> None:
         vc: wavelink.Player = await utils.get_player(ctx)
         await vc.pause()
 
-    async def handle_resume(self, ctx: commands.Context) -> None:
+    async def resume(self, ctx: commands.Context) -> None:
         vc: wavelink.Player = await utils.get_player(ctx)
         await vc.resume()
 
-    async def handle_now_playing(
+    async def now_playing(
         self, ctx: commands.Context
     ) -> tuple[wavelink.Player, File]:
         vc: wavelink.Player = await utils.get_player(ctx)
@@ -166,7 +167,7 @@ class MusicHandlers:
             return (None, None)
         return (vc, file)
 
-    async def handle_volume(self, ctx: commands.Context, vol) -> wavelink.Player:
+    async def volume(self, ctx: commands.Context, vol) -> wavelink.Player:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vol:
@@ -178,7 +179,7 @@ class MusicHandlers:
         await vc.set_volume(vol)
         return vc
 
-    async def handle_skip_all(self, ctx: commands.Context) -> WaitQueue:
+    async def skip_all(self, ctx: commands.Context) -> WaitQueue:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
@@ -191,7 +192,7 @@ class MusicHandlers:
 
         return old_queue
 
-    async def handle_force_skip(self, ctx: commands.Context) -> wavelink.Track:
+    async def force_skip(self, ctx: commands.Context) -> wavelink.Track:
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if not vc.queue or vc.queue.is_empty:
@@ -205,7 +206,7 @@ class MusicHandlers:
 
         return track
 
-    async def handle_seek(
+    async def seek(
         self, ctx: commands.Context, time: str
     ) -> tuple[str, str, wavelink.Player]:
         vc: wavelink.Player = await utils.get_player(ctx)
@@ -235,7 +236,7 @@ class MusicHandlers:
         await vc.seek(position * 1000)
         return prev_pos, position, vc
 
-    async def handle_filter(self, ctx: commands.Context, mode: str):
+    async def filter(self, ctx: commands.Context, mode: str):
         vc: wavelink.Player = await utils.get_player(ctx)
 
         if not mode in self.filters.modes.keys():
@@ -243,12 +244,12 @@ class MusicHandlers:
 
         await vc.set_filter(self.filters.modes[mode])
 
-    async def handle_filter_reset(self, ctx: commands.Context):
+    async def filter_reset(self, ctx: commands.Context):
         vc: wavelink.Player = await utils.get_player(ctx)
 
         await vc.set_filter(self.filters.clear, seek=True)
 
-    async def handle_filter_current(
+    async def filter_current(
         self, ctx: commands.Context, modes: dict[str:CustomFilter]
     ):
         vc: wavelink.Player = await utils.get_player(ctx)
