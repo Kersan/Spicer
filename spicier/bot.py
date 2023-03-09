@@ -9,6 +9,32 @@ from .core import tools as core
 from .database import Database
 
 
+class Setup:
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.db = bot.db
+
+        self.cogs_dir = "spicier/cogs"
+
+    async def start(self):
+        await self.setup_database()
+        await self.setup_cogs()
+
+    async def setup_database(self):
+        await self.db.start()
+
+        try:
+            await self.db.setup()
+        except Exception as e:
+            logging.error(f"Error while setting up database: {e}")
+
+        assert self.db.pool is not None, "Database was not initialized correctly!"
+
+    async def setup_cogs(self):
+        await self.bot.add_cog(EventHandler(self.bot))
+        await core.load_cogs(self.bot, cogs_dir=self.cogs_dir)
+
+
 class SpicerBot(commands.Bot):
     def __init__(self):
         self.handler = None
@@ -28,35 +54,21 @@ class SpicerBot(commands.Bot):
         )
         utils.setup_logging(handler=self.handler, level=logging.INFO)
 
-        await super().start(
-            token,
-            reconnect=True,
-        )
-
-    async def setup_database(self):
-        await self.db.start()
-        await self.db.setup()
-
-        assert self.db.pool is not None, "Database was not initialized correctly!"
-
-    async def setup_cogs(self):
-        await self.add_cog(EventHandler(self))
-        await core.load_cogs(self, cogs_dir="spicier/cogs")
+        await super().start(token, reconnect=True)
 
     async def setup_hook(self):
-        await self.setup_database()
-        await self.setup_cogs()
+        await Setup(self).start()
 
     async def on_ready(self):
-        channel = self.get_channel(890257740868485123)
-        await channel.send("Bot is ready!")
+        pass
 
     async def close(self):
         self.logger.info("Closing bot...")
         await super().close()
 
     async def on_message(self, msg):
-        if msg.guild is None or msg.author.bot:
+        if msg.author.bot:
             return
 
-        await self.process_commands(msg)
+        if msg.guild:
+            await self.process_commands(msg)
