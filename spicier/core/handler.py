@@ -38,12 +38,12 @@ class EventHandler(commands.Cog):
         if self.delete:
             await ctx.message.delete(delay=self.delete_time)
 
-        handle: bool = (
+        raise_error: bool = (  # If both are true, raise error
             await self.handle_error(ctx, error)
             and ctx.message.author.guild_permissions.administrator
         )
 
-        if handle:
+        if raise_error:
             raise error
 
     async def handle_error(
