@@ -40,7 +40,7 @@ class MusicCog(commands.Cog, MusicService):
         Disconnect from a voice channel.
         """
         channel = await self.handler.disconnect(ctx)
-        return self.message_disconnected(ctx, channel)
+        return await self.message_disconnected(ctx, channel)
 
     @commands.command()
     @commands.check(utils.user_connected)

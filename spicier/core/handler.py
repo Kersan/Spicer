@@ -1,5 +1,4 @@
 import logging
-import traceback
 from typing import Union
 
 from discord import Message
@@ -84,7 +83,8 @@ class EventHandler(commands.Cog):
 
         elif isinstance(error, PlayerNotPlaying):
             await self.send_error(
-                ctx, "Before using this command, play something", error, debug=False
+                ctx, "Before using this command, play something",
+                error, debug=False
             )
 
         else:

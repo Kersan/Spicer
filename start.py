@@ -23,7 +23,7 @@ if not os.path.exists("logs"):
     os.mkdir("logs")
 
 
-if not "BOT_TOKEN" in os.environ:
+if "BOT_TOKEN" not in os.environ:
     configToken = get_token()
 
     if not configToken or len(configToken) < 16:

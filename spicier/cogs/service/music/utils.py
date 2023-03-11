@@ -84,8 +84,8 @@ def get_proggres_bar(position, duration) -> File:
 
 
 def _build_progres_bar(position, duration) -> Image:
-    background_image = Image.open("img/background.png")
-    progress_image = Image.open("img/progress.png")
+    background_image = Image.open("config/img/background.png")
+    progress_image = Image.open("config/img/progress.png")
 
     progress_width = int((position / duration) * background_image.width)
 

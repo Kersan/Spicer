@@ -28,7 +28,7 @@ class Setup:
         except Exception as e:
             logging.error(f"Error while setting up database: {e}")
 
-        assert self.db.pool is not None, "Database was not initialized correctly!"
+        assert self.db.pool, "Database was not initialized correctly!"
 
     async def setup_cogs(self):
         await self.bot.add_cog(EventHandler(self.bot))
