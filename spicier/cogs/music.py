@@ -1,13 +1,11 @@
 import asyncio
 import logging
-from typing import Literal, Optional, Union
+from typing import Optional, Union
 
 import wavelink
 from discord import VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.abc import Playable
-
-from spicier.cogs.embeds import MusicEmbed
 
 from .service import CustomFilters, MusicService, utils
 
@@ -16,10 +14,10 @@ class MusicCog(commands.Cog, MusicService):
     def __init__(self, bot: commands.Bot):
         self.config = bot.config
         self.bot = bot
-        self.filters = CustomFilters()
 
-        super().__init__(bot, self.filters)
+        super().__init__(bot, CustomFilters())
 
+        # TODO: After reconnecting, check if node is still connected
         bot.loop.create_task(self.create_nodes(self.config.lavalink))
 
     @commands.command(name="connect", aliases=["join"])
@@ -42,35 +40,32 @@ class MusicCog(commands.Cog, MusicService):
         channel = await self.handler.disconnect(ctx)
         return await self.message_disconnected(ctx, channel)
 
-    @commands.command()
+    @commands.command(name="play", aliases=["p"])
     @commands.check(utils.user_connected)
-    async def play(
-        self,
-        ctx: commands.Context,
-        track: Union[wavelink.YouTubeTrack, wavelink.YouTubePlaylist, str, None],
+    async def play_command(
+        self, ctx: commands.Context, *, track: Union[Playable, str, list[str]] = None
     ):
         """
         Play a song* with the given search query.
         """
         tracks, vc = await self.handler.play(
-            ctx=ctx,
-            track=track,
-            connect=self.connect_command,
-            resume=self.resume_command,
+            ctx,
+            track,
+            self.resume_command,
+            self.connect_command,
         ) or (None, None)
 
-        if not vc or not tracks:
+        if not any((tracks, vc)):
             return
 
         if not vc.track:
             now = vc.queue.get()
             await vc.play(now)
 
-        return (
-            await self.message_play_single(ctx, vc, tracks[0])
-            if len(tracks) < 2
-            else await self.message_play_multiple(ctx, vc, tracks)
-        )
+        if len(tracks) < 2:
+            return await self.message_play_single(ctx, vc, tracks[0])
+
+        return await self.message_play_multiple(ctx, vc, tracks)
 
     @commands.group(name="queue", aliases=["q"])
     @commands.check(utils.player_check)
@@ -113,7 +108,7 @@ class MusicCog(commands.Cog, MusicService):
         Skip the current song.
         """
         prev_track, next_track = await self.handler.skip(
-            ctx, self.force_skip_command, self.skip_all_command, arg
+            ctx, self.force_skip_command, self.skip_all_command, arg=arg
         )
 
         if next_track:
@@ -217,7 +212,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Set the filter mode.
         """
-        await self.handler.filter(ctx, mode)
+        await self.handler.filter(ctx, mode=mode)
 
         return await self.message_filter_set(ctx, mode)
 
@@ -236,7 +231,7 @@ class MusicCog(commands.Cog, MusicService):
         """
         Show the current filter mode.
         """
-        filter, description = await self.handler.filter_current(ctx, self.filters.modes)
+        filter, description = await self.handler.filter_current(ctx)
 
         return await self.message_filter_current(ctx, filter, description)
 
@@ -279,11 +274,16 @@ class MusicCog(commands.Cog, MusicService):
 
     @tasks.loop(count=1)
     async def dead(self, player: wavelink.Player, voice: VoiceState):
-        if voice and len(voice.channel.members) == 1:
-            try:
-                await player.disconnect()
-            except Exception:
-                pass
+        if not voice:
+            return
+
+        if len(voice.channel.members) > 1:
+            return
+
+        try:
+            await player.disconnect()
+        except Exception:
+            pass
 
     @dead.before_loop
     async def before_disconnect(self):

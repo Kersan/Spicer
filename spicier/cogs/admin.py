@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from discord import HTTPException, Object
+from discord import Object
 from discord.ext import commands
 from discord.ext.commands import Context, Greedy
 
@@ -23,7 +23,6 @@ class AdminCog(commands.Cog, AdminService):
     async def reload_command(self, ctx, *cogs: str):
         """Reloads a cog or all cogs."""
         final_cogs = await self.handler.reload(self.bot, cogs)
-
         return await self.message_reload(ctx, final_cogs)
 
     @admin.command()

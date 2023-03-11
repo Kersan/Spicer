@@ -6,9 +6,10 @@ from discord.ext import commands
 from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
 
-from ...embeds.music import MusicEmbed
+from spicier.embeds import MusicEmbed
+
 from . import CustomFilters, utils
-from .handler import MusicHandlers
+from .handler import MusicHandler
 
 
 class MusicService:
@@ -17,7 +18,7 @@ class MusicService:
     def __init__(self, bot, filters: CustomFilters):
         self.bot = bot
         self.filters = filters
-        self.handler = MusicHandlers(filters)
+        self.handler = MusicHandler(filters)
 
     async def create_nodes(self, config):
         try:
@@ -109,6 +110,13 @@ class MusicService:
             + f"<:Reply:1076905179619807242> **Author**: {track.author}"
         )
 
+    def _get_tracks(self, queue: WaitQueue, pos: int):
+        trakcs = []
+        for index, track in enumerate(queue):
+            if pos <= index and index < pos + 8:
+                trakcs.append(self._track_fragment(track, index))
+        return trakcs
+
     async def message_queue(
         self,
         ctx: commands.Context,
@@ -117,13 +125,7 @@ class MusicService:
         pos: int,
         file=None,
     ):
-        desc = "\n".join(
-            [
-                self._track_fragment(track, index)
-                for index, track in enumerate(queue)
-                if pos <= index and index < pos + 8
-            ]
-        )
+        desc = "\n".join(self._get_tracks(queue, pos))
         embed = MusicEmbed.success(
             ctx.author,
             f"{ctx.guild.name} | Queue display",

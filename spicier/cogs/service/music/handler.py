@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Callable, Union
 
@@ -15,13 +16,81 @@ from spicier.errors import (
     WrongArgument,
 )
 
-from . import CustomFilter, CustomFilters, utils
+from . import CustomFilters, utils
 
 
-class MusicHandlers:
+def use_vc(func: Callable) -> Callable:
+    async def wrapper(self, ctx: commands.Context, *args, **kwargs):
+        vc = await utils.get_player(ctx)
+        return await func(self, ctx, vc=vc, *args, **kwargs)
+
+    return wrapper
+
+
+class CommandArgs:
+    def __init__(self):
+        self.all = ["all", "a"]
+        self.force = ["force", "f"]
+        self.loop = ["loop", "l"]
+
+
+class MusicHandler:
     def __init__(self, filters: CustomFilters):
         self.filters = filters
 
+        self.args = CommandArgs()
+
+    async def _youtube_search(self, query: str):
+        result = await wavelink.YouTubeTrack.search(query=query, return_first=True)
+
+        if not result:
+            raise SearchNotFound(query)
+
+        return result
+
+    async def play(
+        self,
+        ctx: commands.Context,
+        track: Union[str, wavelink.abc.Playable],
+        resume: Callable,
+        connect: Callable,
+    ):
+        logging.info(f"Handling play command with track: {track}")
+
+        if not await utils.bot_connected(ctx) and not track:
+            await connect(ctx)
+            return
+
+        vc = await utils.get_player(ctx)
+
+        if not track and vc.is_paused() and vc.track:
+            return await resume(ctx)
+
+        if not track and not vc.is_paused():
+            raise commands.MissingRequiredArgument(
+                Parameter("Track", Parameter.POSITIONAL_OR_KEYWORD)
+            )
+
+        tracks = []
+        if isinstance(track, wavelink.YouTubeTrack):
+            tracks.append(track)
+
+        if isinstance(track, wavelink.YouTubePlaylist):
+            tracks.extend([t for t in track.tracks])
+
+        elif isinstance(track, str):
+            try:
+                tracks.append(await self._youtube_search(track))
+            except Exception:
+                raise WrongArgument(message="Invalid search query.")
+
+        if not tracks:
+            raise SearchNotFound(track)
+
+        for t in tracks:
+            vc.queue.put(t)
+
+        return tracks, vc
 
     async def connect(
         self, ctx: commands.Context, channel: VoiceChannel = None
@@ -44,9 +113,10 @@ class MusicHandlers:
         finally:
             return vc
 
-    async def disconnect(self, ctx: commands.Context) -> str:
-        vc: wavelink.Player = await utils.get_player(ctx)
-
+    @use_vc
+    async def disconnect(
+        self, ctx: commands.Context, vc: wavelink.Player = None
+    ) -> str:
         if vc.queue:
             vc.queue.clear()
 
@@ -55,121 +125,71 @@ class MusicHandlers:
         await ctx.voice_client.disconnect()
         return channel_name
 
-    async def play(
-        self,
-        ctx: commands.Context,
-        track: Union[str, wavelink.Track],
-        connect: Callable,
-        resume: Callable,
-    ):
-
-        if not await utils.bot_connected(ctx) and not track:
-            await connect(ctx)
-            return (None, None)
-
-        tracks = []
-        vc = await utils.get_player(ctx)
-
-        if not track and vc.is_paused() and vc.track:
-            return await resume(ctx)
-
-        if not track and not vc.is_paused():
-            raise commands.MissingRequiredArgument(
-                Parameter("Track", Parameter.POSITIONAL_OR_KEYWORD)
-            )
-
-        if isinstance(track, wavelink.YouTubeTrack):
-            tracks.append(track)
-
-        if isinstance(track, wavelink.YouTubePlaylist):
-            tracks.extend([t for t in track.tracks])
-
-        elif isinstance(track, str):
-            try:
-                result = await wavelink.YouTubeTrack.search(
-                    query=track, return_first=True
-                )
-
-                if result:
-                    tracks.append(result)
-            except Exception:
-                raise WrongArgument(message="Invalid search query.")
-
-        if not tracks:
-            raise SearchNotFound(track)
-
-        for t in tracks:
-            vc.queue.put(t)
-
-        return tracks, vc
-
+    @use_vc
     async def queue(
-        self,
-        ctx: commands.Context,
+        self, ctx: commands.Context, vc: wavelink.Player = None
     ) -> tuple[wavelink.Track, WaitQueue, File]:
-        vc: wavelink.Player = await utils.get_player(ctx)
-
         file = None
         if vc.track:
             file = utils.get_proggres_bar(vc.position, vc.track.duration)
 
         return (vc.track, vc.queue, file)
 
+    async def _handle_skip_arg(self, ctx, arg, force_skip, skip_all):
+        if arg.lower() in self.args.all:
+            return await skip_all(ctx)
+
+        if arg.lower() in self.args.force:
+            return await force_skip(ctx)
+
+        raise WrongArgument(message="Invalid argument provided.")
+
+    @use_vc
     async def skip(
         self,
         ctx: commands.Context,
-        force_skip: Callable,
-        skip_all: Callable,
+        force_skip: commands.Command,
+        skip_all: commands.Command,
         arg: str = None,
+        vc: wavelink.Player = None,
     ) -> wavelink.Track:
-        vc: wavelink.Player = await utils.get_player(ctx)
+        if arg:
+            return await self._handle_skip_arg(ctx, arg, force_skip, skip_all)
 
-        arg_all = ["all", "a"]
-        arg_force = ["force", "f"]
-
-        if arg and arg.lower() not in arg_all + arg_force:
-            raise WrongArgument(message="Invalid argument provided.")
-
-        if arg and arg.lower() in arg_all:
-            return await skip_all(ctx)
-
-        if arg and arg.lower() in arg_force:
-            return await force_skip(ctx)
-
-        track = vc.track
+        prev = vc.track
         next = None
 
-        if not vc.queue:
-            await vc.stop()
-
-        else:
+        if vc.queue:
             next = vc.queue.get()
             await vc.play(next)
 
-        return track, next
+        else:
+            await vc.stop()
 
-    async def pause(self, ctx: commands.Context) -> None:
-        vc: wavelink.Player = await utils.get_player(ctx)
+        return prev, next
+
+    @use_vc
+    async def pause(self, ctx: commands.Context, vc: wavelink.Player = None) -> None:
         await vc.pause()
 
-    async def resume(self, ctx: commands.Context) -> None:
-        vc: wavelink.Player = await utils.get_player(ctx)
+    @use_vc
+    async def resume(self, ctx: commands.Context, vc: wavelink.Player = None) -> None:
         await vc.resume()
 
+    @use_vc
     async def now_playing(
-        self, ctx: commands.Context
+        self, ctx: commands.Context, vc: wavelink.Player = None
     ) -> tuple[wavelink.Player, File]:
-        vc: wavelink.Player = await utils.get_player(ctx)
-
         file = utils.get_proggres_bar(vc.position, vc.track.duration)
 
         if not vc.track:
             return (None, None)
         return (vc, file)
 
-    async def volume(self, ctx: commands.Context, vol) -> wavelink.Player:
-        vc: wavelink.Player = await utils.get_player(ctx)
-
+    @use_vc
+    async def volume(
+        self, ctx: commands.Context, vol, vc: wavelink.Player = None
+    ) -> wavelink.Player:
         if not vol:
             return vc
 
@@ -179,9 +199,10 @@ class MusicHandlers:
         await vc.set_volume(vol)
         return vc
 
-    async def skip_all(self, ctx: commands.Context) -> WaitQueue:
-        vc: wavelink.Player = await utils.get_player(ctx)
-
+    @use_vc
+    async def skip_all(
+        self, ctx: commands.Context, vc: wavelink.Player = None
+    ) -> WaitQueue:
         if not vc.queue or vc.queue.is_empty:
             raise QueueEmpty("Queue is already empty.")
 
@@ -192,9 +213,10 @@ class MusicHandlers:
 
         return old_queue
 
-    async def force_skip(self, ctx: commands.Context) -> wavelink.Track:
-        vc: wavelink.Player = await utils.get_player(ctx)
-
+    @use_vc
+    async def force_skip(
+        self, ctx: commands.Context, vc: wavelink.Player = None
+    ) -> wavelink.Track:
         if not vc.queue or vc.queue.is_empty:
             raise QueueEmpty("Queue is already empty.")
 
@@ -212,7 +234,7 @@ class MusicHandlers:
         vc: wavelink.Player = await utils.get_player(ctx)
         prev_pos = vc.position
 
-        if time.isdigit() and int(time) < vc.track.duration and int(time) > 0:
+        if time.isdigit() and int(time) < vc.track.duration and int(time) >= 0:
             position = int(time)
             await vc.seek(position * 1000)
             return prev_pos, position, vc
@@ -236,25 +258,25 @@ class MusicHandlers:
         await vc.seek(position * 1000)
         return prev_pos, position, vc
 
-    async def filter(self, ctx: commands.Context, mode: str):
-        vc: wavelink.Player = await utils.get_player(ctx)
-
-        if not mode in self.filters.modes.keys():
+    @use_vc
+    async def filter(
+        self, ctx: commands.Context, mode: str, vc: wavelink.Player = None
+    ):
+        if mode not in self.filters.modes.keys():
             raise WrongArgument("Invalid filter mode.")
 
         await vc.set_filter(self.filters.modes[mode])
 
-    async def filter_reset(self, ctx: commands.Context):
-        vc: wavelink.Player = await utils.get_player(ctx)
-
+    @use_vc
+    async def filter_reset(self, ctx: commands.Context, vc: wavelink.Player = None):
         await vc.set_filter(self.filters.clear, seek=True)
 
-    async def filter_current(
-        self, ctx: commands.Context, modes: dict[str:CustomFilter]
-    ):
-        vc: wavelink.Player = await utils.get_player(ctx)
+    @use_vc
+    async def filter_current(self, ctx: commands.Context, vc: wavelink.Player = None):
         filter = vc.filter.name if vc.filter else None
         return (
             filter,
-            modes[filter].description if filter else "Ten filtr nie posiada opisu.",
+            self.filters.modes[filter].description
+            if filter
+            else "Ten filtr nie posiada opisu.",
         )
