@@ -35,6 +35,7 @@ class Setup:
     async def cogs(bot: commands.Bot):
         await bot.load_extension("spicier.cogs.music")
         await bot.load_extension("spicier.cogs.admin")
+        await bot.load_extension("spicier.cogs.server")
 
 
 class SpicerBot(commands.Bot):
@@ -89,3 +90,17 @@ class SpicerBot(commands.Bot):
 
         if msg.guild:
             await self.process_commands(msg)
+
+    async def get_prefix(self, message):
+        if message.guild:
+            prefix = await self.server_manager.get_prefix(message.guild.id)
+
+            if not prefix:
+                await self.server_manager.set_prefix(
+                    message.guild.id, self.config.prefix
+                )
+                prefix = self.config.prefix
+
+            return prefix
+
+        return self.config.prefix
