@@ -1,13 +1,12 @@
 import json
 import os
 
-
-class BadConfig(Exception):
-    def __init__(self, cause: Exception):
-        self.cause = cause
+from .errors import BadConfig
 
 
 class Config:
+    """The config class"""
+
     def __init__(self, path: str = "config/default.json"):
         self._path = path
         self.raw: json = self._get_config()
@@ -30,13 +29,15 @@ class Config:
             return json.load(json_lang)
 
     def update_langs(self):
+        """Update the langs dict"""
         self.langs = {lang: self._get_lang(lang) for lang in self._get_lang_names()}
 
     def prop(self, prop: str):
+        """Get a property from the config"""
         try:
             return self.raw[prop]
-        except Exception as e:
-            raise BadConfig(e)
+        except Exception as exception:
+            raise BadConfig(exception) from exception
 
     @property
     def database(self) -> dict:

@@ -40,6 +40,7 @@ async def player_check(ctx: commands.Context) -> bool:
 
 
 async def player_alive(player: wavelink.Player) -> bool:
+    """Check: Player is alive"""
     return bool(not player.queue.is_empty or player.track)
 
 
@@ -74,6 +75,7 @@ def get_lenght(tracks: list[wavelink.Track]) -> str:
 
 
 def get_proggres_bar(position, duration) -> File:
+    """Get the progress bar for given position and duration."""
     final = _build_progres_bar(position, duration)
 
     with BytesIO() as image_binary:

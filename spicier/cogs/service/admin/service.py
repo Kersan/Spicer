@@ -4,6 +4,8 @@ from .handler import AdminHandler
 
 
 class AdminService:
+    """Service for admin commands"""
+
     def __init__(self, bot: commands.Bot, lang):
         self.bot = bot
         self.lang = lang

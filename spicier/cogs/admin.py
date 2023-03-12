@@ -8,6 +8,8 @@ from .service import AdminService
 
 
 class AdminCog(commands.Cog, AdminService):
+    """Admin tools"""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -16,6 +18,7 @@ class AdminCog(commands.Cog, AdminService):
     @commands.group(name="admin", usage="[command]", aliases=["a"])
     @commands.is_owner()
     async def admin(self, ctx):
+        """Admin command group"""
         pass
 
     @admin.command(name="reload", aliases=["r"])
@@ -34,8 +37,15 @@ class AdminCog(commands.Cog, AdminService):
         guilds: Greedy[Object],
         spec: Optional[Literal["~", "*", "^"]] = None,
     ) -> None:
+        """Synchronize command tree with Discord."""
         values = await self.handler.sync(ctx, guilds, spec)
         return await self.message_sync(ctx, values)
+
+    @admin.command(name="cache")
+    @commands.is_owner()
+    async def cache_command(self, ctx):
+        """Display the cache"""
+        await ctx.reply(self.bot.cache._servers)
 
 
 async def setup(bot):

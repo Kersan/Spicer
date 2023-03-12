@@ -1,10 +1,11 @@
 from discord import Embed, User
-from discord.ext import commands
 
 DEFAULT_URL = "https://discord.gg/CKvaXz5"
 
 
 class MusicEmbed:
+    """Embed builder for music commands"""
+
     @staticmethod
     def success(
         author: User = None,
@@ -15,6 +16,7 @@ class MusicEmbed:
         thumbnail: str = None,
         color=0x2B2D31,
     ):
+        """Build success embed"""
         embed = Embed(
             url=url,
             color=color,
@@ -35,6 +37,7 @@ class MusicEmbed:
         description: str = None,
         color=0xFAA61A,
     ):
+        """Build warning embed"""
         embed = Embed(
             color=color,
             title=title,
