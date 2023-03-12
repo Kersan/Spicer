@@ -9,10 +9,10 @@ from discord.ext.commands import Parameter
 from wavelink.queue import WaitQueue
 
 from spicier.errors import (
+    InvalidVolume,
     QueueEmpty,
     SearchNotFound,
     VoiceConnectionError,
-    VolumeBelowZero,
     WrongArgument,
 )
 
@@ -196,7 +196,7 @@ class MusicHandler:
             return vc
 
         if not 0 < vol < 201:
-            raise VolumeBelowZero
+            raise InvalidVolume
 
         await vc.set_volume(vol)
         return vc

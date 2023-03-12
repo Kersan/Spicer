@@ -5,5 +5,5 @@ from .music import (
     QueueEmpty,
     SearchNotFound,
     VoiceConnectionError,
-    VolumeBelowZero,
+    InvalidVolume,
 )
