@@ -11,6 +11,7 @@ def get_token():
         return config["token"]
 
 
+# If the config file doesn't exist, create it from the example
 if not os.path.exists("config/default.json"):
     configExample = ""
     with open("config/default-example.json", "r", encoding="utf-8") as example:
@@ -31,9 +32,6 @@ if "BOT_TOKEN" not in os.environ:
             "Token not set in environment variables and is not valid in config.json!\n"
             "Please set the token in env or use a valid token in config.json"
         )
-
-    # should add to env, but not working 😜
-    os.environ["BOT_TOKEN"] = configToken
 
 
 async def main():

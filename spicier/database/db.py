@@ -21,14 +21,15 @@ class DBData:
 
 
 class Database(DBData):
+
+    server: ServerTable
+    skip: SkipTable
+    queue: QueueTable
+    playlist: PlaylistTable
+
     def __init__(self, **kwargs):
         super(Database, self).__init__(**kwargs)
         self.pool: Pool = None
-
-        self.skip = SkipTable(self.pool, "skip")
-        self.server = ServerTable(self.pool, "server")
-        self.queue = QueueTable(self.pool, "queue")
-        self.playlist = PlaylistTable(self.pool, "playlist")
 
     @property
     def settings(self) -> dict:
@@ -51,6 +52,9 @@ class Database(DBData):
                 database_logger.warning(fail_msg.format(i + 1, tries))
                 time.sleep(5)
 
+        if self.pool:
+            database_logger.info("Connected to database")
+
     async def setup(self, path: str = "spicier/database/sql"):
         """Setup database with sql scripts"""
         sqls = self._get_scripts(path)
@@ -58,7 +62,9 @@ class Database(DBData):
         database_logger.info(f"Setting up database with {len(sqls)} scripts...")
 
         for sql in sqls:
-            await self._execute(path, sql)
+            await self._execute_file(path, sql)
+
+        self._build_tables()
 
         database_logger.info("Database setup complete")
 
@@ -71,7 +77,7 @@ class Database(DBData):
 
         return sqls
 
-    async def _execute(self, path: str, sql: str):
+    async def _execute_file(self, path: str, sql: str):
         with open(f"{path}/{sql}", "r") as file:
             return await self.pool.execute(file.read())
 
@@ -83,3 +89,11 @@ class Database(DBData):
             return False
         else:
             return True
+
+    def _build_tables(self):
+        database_logger.info("Creating managers for database tables...")
+
+        self.server = ServerTable(self.pool, "server")
+        self.skip = SkipTable(self.pool, "skip")
+        self.queue = QueueTable(self.pool, "queue")
+        self.playlist = PlaylistTable(self.pool, "playlist")

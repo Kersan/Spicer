@@ -7,19 +7,27 @@ from discord import VoiceChannel, VoiceState
 from discord.ext import commands, tasks
 from wavelink.abc import Playable
 
+from spicier.config import Config
+from spicier.manager import ServerManager
+
 from .service import CustomFilters, MusicService, utils
 
 music_logger = logging.getLogger("spicier.music")
 
 
 class MusicCog(commands.Cog, MusicService):
+
+    server_manager: ServerManager
+    config: Config
+    bot: commands.Bot
+
     def __init__(self, bot: commands.Bot):
+        self.server_manager = bot.server_manager
         self.config = bot.config
         self.bot = bot
 
         super().__init__(bot, CustomFilters(), music_logger)
 
-        # TODO: After reconnecting, check if node is still connected
         bot.loop.create_task(self.create_nodes(self.config.lavalink))
 
     @commands.command(name="connect", aliases=["join"])
@@ -245,17 +253,20 @@ class MusicCog(commands.Cog, MusicService):
     async def on_wavelink_track_end(
         self, player: wavelink.Player, track: wavelink.Track, reason
     ):
+        channel = self.bot.get_channel(
+            await self.server_manager.get_channel(player.guild.id)
+        )
+
         if player.track:
             return
 
         if player.queue.is_empty:
-            # TODO: Get queue text channel and send message
-            return
+            return await channel.send("Queue is empty.")
 
         next: Playable = player.queue.get()
         await player.play(next)
 
-        # TODO: Get queue text channel and send message
+        return await channel.send(next.info)
 
     @commands.Cog.listener()
     async def on_voice_state_update(

@@ -4,17 +4,8 @@ from datetime import date
 from os import path
 
 from discord import Intents
-from discord.ext import commands
 
 core_logger = logging.getLogger("spicier.core")
-
-
-async def load_cogs(bot: commands.Bot, cogs_dir: str = "spicier/cogs") -> None:
-    """Load all cogs from the given directory"""
-    for filename in os.listdir(cogs_dir):
-        if filename.endswith(".py"):
-            await bot.load_extension(f"spicier.cogs.{filename[:-3]}")
-    core_logger.info(f"Loaded {len(bot.extensions)} cogs!")
 
 
 def set_intents(intents: Intents = Intents.default()) -> Intents:
