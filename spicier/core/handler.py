@@ -12,6 +12,8 @@ from spicier.errors import (
     WrongArgument,
 )
 
+core_logger = logging.getLogger("spicier.core")
+
 
 class EventHandler(commands.Cog):
     """Handles bot events"""
@@ -69,9 +71,12 @@ class EventHandler(commands.Cog):
             await self.send_error(ctx, f"Channel not found: `{error.argument}`", error)
 
         elif isinstance(error, VoiceConnectionError):
-            await self.send_error(
-                ctx, "Something went wrong with the voice connection", error
+            msg = (
+                "Something went wrong with the voice connection"
+                if not error.message
+                else error.message
             )
+            await self.send_error(ctx, msg, error)
 
         elif isinstance(error, QueueEmpty):
             await self.send_error(ctx, "The queue is empty", error, debug=False)
@@ -83,12 +88,11 @@ class EventHandler(commands.Cog):
 
         elif isinstance(error, PlayerNotPlaying):
             await self.send_error(
-                ctx, "Before using this command, play something",
-                error, debug=False
+                ctx, "Before using this command, play something", error, debug=False
             )
 
         else:
-            logging.error(str(error))
+            core_logger.error(str(error))
             return True
 
     async def send_error(
@@ -101,4 +105,4 @@ class EventHandler(commands.Cog):
         """Reply with error message and log error"""
         await ctx.reply(message, delete_after=self.delete_time)
         if debug:
-            logging.debug(str(error))
+            core_logger.debug(str(error))

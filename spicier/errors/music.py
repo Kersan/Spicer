@@ -10,7 +10,8 @@ class QueueEmpty(CommandError):
 
 
 class VoiceConnectionError(CommandError):
-    pass
+    def __init__(self, message: str):
+        self.message = message
 
 
 class PlayerNotPlaying(CommandError):

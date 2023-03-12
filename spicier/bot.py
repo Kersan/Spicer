@@ -8,6 +8,8 @@ from .core import EventHandler
 from .core import tools as core
 from .database import Database
 
+bot_logger = logging.getLogger("spicier")
+
 
 class Setup:
     def __init__(self, bot: commands.Bot):
@@ -26,7 +28,7 @@ class Setup:
         try:
             await self.db.setup()
         except Exception as e:
-            logging.error(f"Error while setting up database: {e}")
+            bot_logger.error(f"Error while setting up database: {e}")
 
         assert self.db.pool, "Database was not initialized correctly!"
 

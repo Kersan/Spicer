@@ -8,6 +8,8 @@ from asyncpg import Pool
 
 from .tables import PlaylistTable, QueueTable, ServerTable, SkipTable
 
+database_logger = logging.getLogger("spicier.database")
+
 
 @dataclass
 class DBData:
@@ -46,25 +48,25 @@ class Database(DBData):
             if await self._try_connect():
                 break
             else:
-                logging.warning(fail_msg.format(i + 1, tries))
+                database_logger.warning(fail_msg.format(i + 1, tries))
                 time.sleep(5)
 
     async def setup(self, path: str = "spicier/database/sql"):
         """Setup database with sql scripts"""
         sqls = self._get_scripts(path)
 
-        logging.info(f"Setting up database with {len(sqls)} scripts...")
+        database_logger.info(f"Setting up database with {len(sqls)} scripts...")
 
         for sql in sqls:
             await self._execute(path, sql)
 
-        logging.info("Database setup complete")
+        database_logger.info("Database setup complete")
 
     def _get_scripts(self, path: str) -> list:
         sqls = [file for file in os.listdir(path) if file.endswith(".sql")]
 
         if len(sqls) == 0:
-            logging.warning("No sql scripts found in given path")
+            database_logger.warning("No sql scripts found in given path")
             return []
 
         return sqls
@@ -77,7 +79,7 @@ class Database(DBData):
         try:
             self.pool = await asyncpg.create_pool(**self.settings)
         except Exception as e:
-            logging.error(f"Failed to connect to database: {e}")
+            database_logger.error(f"Failed to connect to database: {e}")
             return False
         else:
             return True

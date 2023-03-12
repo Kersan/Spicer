@@ -35,9 +35,9 @@ class CommandArgs:
 
 
 class MusicHandler:
-    def __init__(self, filters: CustomFilters):
+    def __init__(self, filters: CustomFilters, logger: logging.Logger):
         self.filters = filters
-
+        self.logger = logger
         self.args = CommandArgs()
 
     async def _youtube_search(self, query: str):
@@ -55,7 +55,7 @@ class MusicHandler:
         resume: Callable,
         connect: Callable,
     ):
-        logging.info(f"Handling play command with track: {track}")
+        self.logger.info(f"Handling play command with track: {track}")
 
         if not await utils.bot_connected(ctx) and not track:
             await connect(ctx)
@@ -96,10 +96,10 @@ class MusicHandler:
         self, ctx: commands.Context, channel: VoiceChannel = None
     ) -> wavelink.Player:
         if await utils.voice_check(ctx):
-            raise VoiceConnectionError("Already in voice channel.")
+            raise VoiceConnectionError(message="Already in voice channel.")
 
         if ctx.voice_client and not self.is_alone(ctx):
-            raise VoiceConnectionError("In voice channel with someone.")
+            raise VoiceConnectionError(message="In voice channel with someone.")
 
         if channel and channel.guild != ctx.guild:
             raise WrongArgument(message="Channel not found.")

@@ -1,4 +1,4 @@
-from typing import Any
+import logging
 
 import wavelink
 from discord import Embed
@@ -15,10 +15,10 @@ from .handler import MusicHandler
 class MusicService:
     """Music Cog Service"""
 
-    def __init__(self, bot, filters: CustomFilters):
+    def __init__(self, bot, filters: CustomFilters, logger: logging.Logger):
         self.bot = bot
         self.filters = filters
-        self.handler = MusicHandler(filters)
+        self.handler = MusicHandler(filters, logger)
 
     async def create_nodes(self, config):
         try:
@@ -97,12 +97,11 @@ class MusicService:
         await ctx.reply(embed=embed, mention_author=False)
 
     async def message_queue_cleared(self, ctx: commands.Context):
-        await ctx.reply(
-            embed=MusicEmbed.success(
-                ctx.author, "Queue cleared", description="Queue is empty now."
-            ),
-            mention_author=False,
+        embed = MusicEmbed.success(
+            ctx.author, "Queue cleared", description="Queue is empty now."
         )
+
+        await ctx.reply(embed=embed, mention_author=False)
 
     def _track_fragment(self, track: wavelink.Track, index: int):
         return (
@@ -211,7 +210,7 @@ class MusicService:
         )
 
         if image:
-            embed.set_image(url=f"attachment://{{image.filename}}")
+            embed.set_image(url=f"attachment://{image.filename}")
 
         await ctx.reply(embed=embed, mention_author=False, file=image)
 
@@ -252,11 +251,7 @@ class MusicService:
         await ctx.reply(embed=embed, mention_author=False, file=image)
 
     def _add_filter(self, embed: Embed, name: str, filter):
-        embed.add_field(
-            name=f"`{name}`",
-            value=f"<:Reply:1076905179619807242> {filter.description}",
-            inline=True,
-        )
+        embed.add_field(name=f"`{name}`", value=filter.description, inline=True)
         return embed
 
     async def message_filter_list(self, ctx: commands.Context):
@@ -270,9 +265,7 @@ class MusicService:
 
     async def message_filter_set(self, ctx: commands.Context, mode: str):
         embed = MusicEmbed.success(
-            ctx.author,
-            action="Filters",
-            title=f"Filter set to `{mode}`",
+            ctx.author, action="Filters", title=f"Filter set to `{mode}`"
         )
 
         await ctx.reply(embed=embed, mention_author=False)

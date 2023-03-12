@@ -9,13 +9,15 @@ from wavelink.abc import Playable
 
 from .service import CustomFilters, MusicService, utils
 
+music_logger = logging.getLogger("spicier.music")
+
 
 class MusicCog(commands.Cog, MusicService):
     def __init__(self, bot: commands.Bot):
         self.config = bot.config
         self.bot = bot
 
-        super().__init__(bot, CustomFilters())
+        super().__init__(bot, CustomFilters(), music_logger)
 
         # TODO: After reconnecting, check if node is still connected
         bot.loop.create_task(self.create_nodes(self.config.lavalink))
@@ -237,7 +239,7 @@ class MusicCog(commands.Cog, MusicService):
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
-        logging.info(f"Node: <{node.identifier}> is ready!")
+        music_logger.info(f"Node: <{node.identifier}> is ready!")
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(
