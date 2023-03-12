@@ -71,7 +71,6 @@ class SpicerBot(commands.Bot):
             logs_file=False, console_level=logging.INFO
         )
         utils.setup_logging(handler=self.handler, level=logging.INFO)
-
         await super().start(token, reconnect=True)
 
     async def setup_hook(self):

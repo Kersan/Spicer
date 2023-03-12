@@ -261,12 +261,12 @@ class MusicCog(commands.Cog, MusicService):
             return
 
         if player.queue.is_empty:
-            return await channel.send("Queue is empty.")
+            return await self.message_queue_empty(channel)
 
         next: Playable = player.queue.get()
         await player.play(next)
 
-        return await channel.send(next.info)
+        return await self.message_next_track(channel, player, next)
 
     @commands.Cog.listener()
     async def on_voice_state_update(

@@ -37,6 +37,11 @@ class AdminCog(commands.Cog, AdminService):
         values = await self.handler.sync(ctx, guilds, spec)
         return await self.message_sync(ctx, values)
 
+    @admin.command(name="cache")
+    @commands.is_owner()
+    async def cache_command(self, ctx):
+        await ctx.reply(self.bot.cache._servers)
+
 
 async def setup(bot):
     await bot.add_cog(AdminCog(bot))

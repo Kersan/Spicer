@@ -1,7 +1,7 @@
 import logging
 
 import wavelink
-from discord import Embed
+from discord import Embed, TextChannel
 from discord.ext import commands
 from wavelink.errors import NodeOccupied
 from wavelink.queue import WaitQueue
@@ -280,9 +280,38 @@ class MusicService:
     ):
         embed = MusicEmbed.success(
             ctx.author,
-            action="Filters",
+            "Filters",
             title=filter,
             description=f"<:Reply:1076905179619807242> {desc}",
         )
 
         await ctx.reply(embed=embed, mention_author=False)
+
+    async def message_queue_empty(self, channel: TextChannel):
+        embed = MusicEmbed.warning(
+            channel.guild.me,
+            f"{channel.guild.name} | Queue",
+            title="Queue is empty",
+            description="Use `play` command to add songs.",
+        )
+
+        await channel.send(embed=embed)
+
+    async def message_next_track(
+        self, channel: TextChannel, vc: wavelink.Player, track: wavelink.Track
+    ):
+        embed = MusicEmbed.success(
+            channel.guild.me,
+            f"{channel.guild.name} | Now playing",
+            title=f"`{track.title}`",
+            url=track.uri,
+        )
+
+        embed.add_field(name="**Duration**:", value=f"`{utils.get_time(track.length)}`")
+        embed.add_field(name="**Track's Author**:", value=f"`{track.author}`")
+        embed.add_field(
+            name="**Track's Source**:",
+            value=f"`{track.info['sourceName'] or 'Unknown'}`",
+        )
+
+        await channel.send(embed=embed)
