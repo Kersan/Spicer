@@ -16,6 +16,7 @@ music_logger = logging.getLogger("spicier.music")
 
 
 class MusicCog(commands.Cog, MusicService):
+    """Handles music functionality for the bot."""
 
     server_manager: ServerManager
     config: Config

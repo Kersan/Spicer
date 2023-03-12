@@ -1,9 +1,12 @@
 from discord.ext import commands
 
 from spicier.manager import ServerManager
+
 from .server import ServerManager
 
+
 class ServerCog(commands.Cog):
+    """Manage the server settings."""
 
     server_manager: ServerManager
 
@@ -15,6 +18,7 @@ class ServerCog(commands.Cog):
     @commands.group(name="prefix", usage="[command]")
     @commands.has_guild_permissions(administrator=True)
     async def prefix_group(self, ctx):
+        """Manage the prefix for the server."""
         if not ctx.invoked_subcommand:
             return await ctx.send_help(ctx.command)
 

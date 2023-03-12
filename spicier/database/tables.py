@@ -21,21 +21,19 @@ class ServerTable(Table):
         super().__init__(*args, **kwargs)
 
     async def get(self, server_id: str):
-        return await self.pool.fetchrow(
-            f"SELECT * FROM server WHERE id = $1", server_id
-        )
+        return await self.pool.fetchrow("SELECT * FROM server WHERE id = $1", server_id)
 
     async def create(self, server_id: int):
-        await self.pool.execute(f"INSERT INTO server (id) VALUES ($1)", server_id)
+        await self.pool.execute("INSERT INTO server (id) VALUES ($1)", server_id)
 
     async def set_channel(self, server_id: int, channel: int):
         await self.pool.execute(
-            f"UPDATE server SET channel = $1 WHERE id = $2", channel, server_id
+            "UPDATE server SET channel = $1 WHERE id = $2", channel, server_id
         )
 
     async def set_prefix(self, server_id: int, prefix: str):
         await self.pool.execute(
-            f"UPDATE server SET prefix = $1 WHERE id = $2", prefix, server_id
+            "UPDATE server SET prefix = $1 WHERE id = $2", prefix, server_id
         )
 
 

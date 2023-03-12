@@ -2,6 +2,8 @@ from typing import Union
 
 
 class Server:
+    """Server model"""
+
     def __init__(
         self, server_id: Union[str, int], channel: int = None, prefix: str = None
     ):
@@ -14,6 +16,7 @@ class Server:
 
     @staticmethod
     def create(result):
+        """Create a server from the given db result"""
         server = Server(result["id"])
 
         if result["channel"]:

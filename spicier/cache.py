@@ -1,5 +1,3 @@
-from typing import Union
-
 from cachetools import TTLCache
 
 from spicier.models import Server

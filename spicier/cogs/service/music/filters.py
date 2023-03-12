@@ -15,6 +15,8 @@ from wavelink.filters import (
 
 
 class CustomFilter(Filter):
+    """Wrapper for custom wavelink.Filter"""
+
     def __init__(self, name: str, descritpion: str, **kwargs):
         super().__init__(**kwargs)
 
@@ -31,6 +33,8 @@ class CustomFilter(Filter):
 
 
 class CustomFilters:
+    """Manages custom filters"""
+
     def __init__(self):
         self._modes = {
             "boost": self.boost,

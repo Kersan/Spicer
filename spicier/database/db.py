@@ -21,6 +21,7 @@ class DBData:
 
 
 class Database(DBData):
+    """Database class for interacting with the database"""
 
     server: ServerTable
     skip: SkipTable
@@ -33,6 +34,7 @@ class Database(DBData):
 
     @property
     def settings(self) -> dict:
+        """Return the database settings"""
         return {
             "user": self.user,
             "password": self.password,
@@ -42,6 +44,9 @@ class Database(DBData):
         }
 
     async def start(self):
+        """Start the database connection.
+        Try to connect to the database 5 times with a 5 second delay between each attempt.
+        """
         tries = 5
         fail_msg = "Failed to connect to database. Retrying... ({}/{})"
 
@@ -81,14 +86,13 @@ class Database(DBData):
         with open(f"{path}/{sql}", "r") as file:
             return await self.pool.execute(file.read())
 
-    async def _try_connect(self):
+    async def _try_connect(self) -> bool:
         try:
             self.pool = await asyncpg.create_pool(**self.settings)
-        except Exception as e:
-            database_logger.error(f"Failed to connect to database: {e}")
-            return False
-        else:
             return True
+        except Exception as exception:
+            database_logger.error(f"Failed to connect to database: {exception}")
+            return False
 
     def _build_tables(self):
         database_logger.info("Creating managers for database tables...")

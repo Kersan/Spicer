@@ -11,8 +11,11 @@ from .manager import ServerManager
 
 
 class Setup:
+    """Handles bot setup"""
+
     @staticmethod
     async def database(bot: commands.Bot):
+        """Sets up database"""
         database: Database = bot.db
         await database.start()
 
@@ -25,20 +28,24 @@ class Setup:
 
     @staticmethod
     async def events(bot: commands.Bot):
+        """Sets up events"""
         await bot.add_cog(EventHandler(bot))
 
     @staticmethod
     async def managers(bot: commands.Bot):
+        """Sets up managers"""
         bot.server_manager = ServerManager(bot.cache, bot.db, bot.config)
 
     @staticmethod
     async def cogs(bot: commands.Bot):
+        """Loads all cogs"""
         await bot.load_extension("spicier.cogs.music")
         await bot.load_extension("spicier.cogs.admin")
         await bot.load_extension("spicier.cogs.server")
 
 
 class SpicerBot(commands.Bot):
+    """Main bot class"""
 
     config: Config
     cache: Cache
@@ -61,6 +68,7 @@ class SpicerBot(commands.Bot):
 
     @property
     def params(self):
+        """Returns bot setup parameters"""
         return {
             "command_prefix": self.config.prefix,
             "intents": tools.set_intents(),
@@ -68,6 +76,7 @@ class SpicerBot(commands.Bot):
         }
 
     async def run(self, token):
+        """Runs the bot"""
         self.logger, self.handler = tools.set_logging(
             logs_file=False, console_level=logging.INFO
         )
@@ -75,16 +84,19 @@ class SpicerBot(commands.Bot):
         await super().start(token, reconnect=True)
 
     async def setup_hook(self):
+        """Sets up the bot"""
         await Setup.database(self)
         await Setup.managers(self)
         await Setup.events(self)
         await Setup.cogs(self)
 
     async def close(self):
+        """Raises when bot is closing"""
         self.logger.info("Closing bot...")
         await super().close()
 
     async def on_message(self, msg):
+        """Handles messages"""
         if msg.author.bot:
             return
 
@@ -92,15 +104,14 @@ class SpicerBot(commands.Bot):
             await self.process_commands(msg)
 
     async def get_prefix(self, message):
-        if message.guild:
-            prefix = await self.server_manager.get_prefix(message.guild.id)
+        """Returns the prefix for the server"""
+        if not message.guild:
+            return self.config.prefix
 
-            if not prefix:
-                await self.server_manager.set_prefix(
-                    message.guild.id, self.config.prefix
-                )
-                prefix = self.config.prefix
+        prefix = await self.server_manager.get_prefix(message.guild.id)
 
+        if prefix:
             return prefix
 
+        await self.server_manager.set_prefix(message.guild.id, self.config.prefix)
         return self.config.prefix

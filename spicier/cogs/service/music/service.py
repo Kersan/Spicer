@@ -13,7 +13,7 @@ from .handler import MusicHandler
 
 
 class MusicService:
-    """Music Cog Service"""
+    """Service for music commands"""
 
     def __init__(self, bot, filters: CustomFilters, logger: logging.Logger):
         self.bot = bot

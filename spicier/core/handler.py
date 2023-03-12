@@ -4,7 +4,6 @@ from discord import Message
 from discord.ext import commands
 
 from spicier.manager import ServerManager
-from spicier.models import Server
 
 from .service import ErrorService
 

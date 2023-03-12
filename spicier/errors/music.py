@@ -2,21 +2,23 @@ from discord.ext.commands.errors import CommandError, ObjectNotFound
 
 
 class SearchNotFound(ObjectNotFound):
-    pass
+    """Raised when the search object is not found"""
 
 
 class QueueEmpty(CommandError):
-    pass
+    """Raised when the queue is empty"""
 
 
 class VoiceConnectionError(CommandError):
+    """Raised when the bot is not connected to a voice channel"""
+
     def __init__(self, message: str):
         self.message = message
 
 
 class PlayerNotPlaying(CommandError):
-    pass
+    """Raised when the player is not playing"""
 
 
-class VolumeBelowZero(CommandError):
-    pass
+class InvalidVolume(CommandError):
+    """Raised when the volume is below 0 or above max"""

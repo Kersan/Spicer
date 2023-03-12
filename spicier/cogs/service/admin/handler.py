@@ -8,10 +8,13 @@ from spicier.errors import WrongArgument
 
 
 class AdminHandler:
+    """Handler for admin commands"""
+
     def __init__(self):
         pass
 
     async def reload(self, bot: commands.Bot, cogs: list[str]):
+        """Reloads cogs"""
         if not cogs:
             cogs = [c[:-3].lower() for c in bot.cogs if "cog" in c.lower()]
             await self._reload_cogs(bot, cogs)
@@ -28,6 +31,7 @@ class AdminHandler:
             raise WrongArgument("Cog with given name does not exist.")
 
     async def sync(self, ctx: commands.Context, guilds: list, spec: str) -> tuple:
+        """Synchronize command tree with Discord."""
         if guilds:
             return await self._handle_sync_guilds(ctx, guilds)
         return await self._handle_sync_spec(ctx, spec)

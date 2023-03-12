@@ -35,6 +35,8 @@ class CommandArgs:
 
 
 class MusicHandler:
+    """Handles logic behind music commands"""
+
     def __init__(self, filters: CustomFilters, logger: logging.Logger):
         self.filters = filters
         self.logger = logger
