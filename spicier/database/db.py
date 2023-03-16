@@ -11,16 +11,7 @@ from .tables import PlaylistTable, QueueTable, ServerTable, SkipTable
 database_logger = logging.getLogger("spicier.database")
 
 
-@dataclass
-class DBData:
-    user: str
-    password: str
-    database: str
-    host: str
-    port: int
-
-
-class Database(DBData):
+class Database:
     """Database class for interacting with the database"""
 
     server: ServerTable
@@ -28,33 +19,24 @@ class Database(DBData):
     queue: QueueTable
     playlist: PlaylistTable
 
-    def __init__(self, **kwargs):
-        super(Database, self).__init__(**kwargs)
+    def __init__(self, database_url: str):
+        self.database_url = database_url
         self.pool: Pool = None
 
-    @property
-    def settings(self) -> dict:
-        """Return the database settings"""
-        return {
-            "user": self.user,
-            "password": self.password,
-            "database": self.database,
-            "host": self.host,
-            "port": self.port,
-        }
+        # While using docker, bot starts before database is ready
+        self._tries = 10
 
     async def start(self):
         """Start the database connection.
-        Try to connect to the database 5 times with a 5 second delay between each attempt.
+        Try to connect to the database for a given amount of times.
         """
-        tries = 5
         fail_msg = "Failed to connect to database. Retrying... ({}/{})"
 
-        for i in range(tries):
+        for i in range(self._tries):
             if await self._try_connect():
                 break
             else:
-                database_logger.warning(fail_msg.format(i + 1, tries))
+                database_logger.warning(fail_msg.format(i + 1, self._tries))
                 time.sleep(5)
 
         if self.pool:
@@ -88,7 +70,7 @@ class Database(DBData):
 
     async def _try_connect(self) -> bool:
         try:
-            self.pool = await asyncpg.create_pool(**self.settings)
+            self.pool = await asyncpg.create_pool(self.database_url)
             return True
         except Exception as exception:
             database_logger.error(f"Failed to connect to database: {exception}")

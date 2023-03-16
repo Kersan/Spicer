@@ -1,4 +1,5 @@
 import logging
+import time
 
 import wavelink
 from discord import Embed, TextChannel
@@ -21,9 +22,10 @@ class MusicService:
         self.handler = MusicHandler(filters, logger)
 
     async def create_nodes(self, config):
+        await self.bot.wait_until_ready()
         try:
-            await self.bot.wait_until_ready()
             await wavelink.NodePool.create_node(bot=self.bot, **config)
+            return True
         except NodeOccupied:
             pass
 
@@ -235,7 +237,7 @@ class MusicService:
 
         embed = MusicEmbed.success(
             ctx.author,
-            action="Seeked time",
+            action=f"{ctx.guild.name} | Seeked time",
             title=f"`{track.title}`",
             description=f"Track's duration: `{utils.get_time(track.duration)}`",
             url=track.uri,

@@ -19,3 +19,6 @@ logs/*
 
 # images
 img/progres_bar.png
+
+# Database
+/data/*

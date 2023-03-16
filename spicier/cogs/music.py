@@ -54,7 +54,10 @@ class MusicCog(commands.Cog, MusicService):
     @commands.command(name="play", aliases=["p"])
     @commands.check(utils.user_connected)
     async def play_command(
-        self, ctx: commands.Context, *, track: Union[Playable, str, list[str]] = None
+        self,
+        ctx: commands.Context,
+        *,
+        track: Union[wavelink.YouTubeTrack, wavelink.YouTubePlaylist] = None,
     ):
         """
         Play a song* with the given search query.

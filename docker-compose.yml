@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+    db:
+        image: postgres:10-alpine
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: superTajne123
+            POSTGRES_DB: discord
+        networks:
+            - bot-network
+        volumes:
+            - ./data:/var/lib/postgresql/data
+
+    lavalink:
+        image: fredboat/lavalink:latest
+        hostname: lavalink
+        ports:
+            - "2333:2333"
+        networks:
+            - bot-network
+        environment:
+            lavalink.server.password: "youshallnotpass"
+            server.port: 2333
+
+    bot:
+        build: .
+        hostname: bot
+        environment:
+            - DATABASE_URL=postgresql://root:superTajne123@db:5432/discord
+            - LAVALINK_HOST=lavalink
+            - LAVALINK_PORT=2333
+        networks:
+            - bot-network
+        volumes:
+            - ./logs:/app/logs
+        depends_on:
+            - db
+
+networks:
+    bot-network:
+        driver: bridge

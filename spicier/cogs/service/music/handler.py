@@ -49,15 +49,15 @@ class MusicHandler:
             raise SearchNotFound(query)
 
         return result
-
+    
     async def play(
         self,
         ctx: commands.Context,
         track: Union[str, wavelink.abc.Playable],
         resume: Callable,
         connect: Callable,
-    ):
-        self.logger.info(f"Handling play command with track: {track}")
+    ) -> tuple[list[wavelink.YouTubeTrack], wavelink.Player]:
+        self.logger.info(f"Handling play command with track: {track}" + f" {type(track)}")
 
         if not await utils.bot_connected(ctx) and not track:
             await connect(ctx)
