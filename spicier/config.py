@@ -14,6 +14,8 @@ class Config:
         self.langs = {}
         self.update_langs()
 
+        self._db_url = "postgresql://{}:{}@{}:{}/{}"
+
     def _get_config(self):
         with open(self._path, "r", encoding="utf-8") as file:
             json_cfg = file
@@ -40,16 +42,31 @@ class Config:
             raise BadConfig(exception) from exception
 
     @property
-    def database(self) -> dict:
-        return self.prop("postgres")
+    def database(self) -> str:
+        if os.getenv("DATABASE_URL"):
+            return os.getenv("DATABASE_URL")
+        
+        db = self.prop("postgres")
+
+        return self._db_url.format(
+            db["user"], db["password"], db["host"], db["port"], db["database"]
+        )
+
+    @property
+    def lavalink(self) -> dict:
+        prop = self.prop("lavalink")
+
+        if not os.getenv("LAVALINK_HOST"):
+            return prop
+
+        prop["host"] = os.getenv("LAVALINK_HOST")
+        prop["port"] = os.getenv("LAVALINK_PORT")
+
+        return prop
 
     @property
     def prefix(self) -> str:
         return self.prop("prefix")
-
-    @property
-    def lavalink(self) -> dict:
-        return self.prop("lavalink")
 
     @property
     def delete_after(self) -> bool:

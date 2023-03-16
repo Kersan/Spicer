@@ -62,7 +62,7 @@ class SpicerBot(commands.Bot):
         self.config = Config()
         self.cache = Cache()
 
-        self.db = Database(**self.config.database)
+        self.db = Database(self.config.database)
 
         super().__init__(**self.params)
 
